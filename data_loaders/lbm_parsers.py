@@ -7,7 +7,7 @@ class XYStackedParser:
     Parses stacked 2D matrices (XY planes) from LBM CSV output.
     Format: Header -> Z-Height -> N rows of Y-data -> Z-Height -> ...
     """
-    def __init__(self, ny_rows=96):
+    def __init__(self, ny_rows=160):
         self.ny_rows = ny_rows
 
     def parse_file(self, file_path):
