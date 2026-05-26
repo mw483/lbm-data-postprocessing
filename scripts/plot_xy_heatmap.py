@@ -5,7 +5,7 @@ import numpy as np
 
 # Adjust path to import modules from the parent directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_loaders.wind_parser import LBMWindParser
+from data_loaders.lbm_parsers import XYStackedParser
 # from plotting_core.theme import REPORT_THEME # You can wire this up later
 
 def create_heatmap(data_matrix, z_height, case_name, output_dir):
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     output_folder = "C:/Users/Mikael Wijaya/Documents/GitHub/lbm-data-postprocessing/figures"
 
     # Initialize the parser we built earlier
-    parser = LBMWindParser(ny_rows=96)
+    parser = XYStackedParser(ny_rows=96)
 
     # --- 2. Execution Loop ---
     for case_name, file_path in simulation_cases.items():
