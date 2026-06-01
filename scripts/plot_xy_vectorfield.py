@@ -79,8 +79,8 @@ if __name__ == "__main__":
     # Map your simulation cases to their specific Rclone file paths
     simulation_cases = {
         "Takamatsu_1" : {
-        "u_path": "Z:/20260525_output_takamatsu/xy_um00120000_0000.csv",
-        "v_path": "Z:/20260525_output_takamatsu/xy_vm00120000_0000.csv"
+        "u_path": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00120000_0000.csv",
+        "v_path": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00120000_0000.csv"
     }
     }
     

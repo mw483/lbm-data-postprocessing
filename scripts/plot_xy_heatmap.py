@@ -61,8 +61,21 @@ if __name__ == "__main__":
     # --- 1. Configuration ---
     # Map your simulation cases to their specific Rclone file paths
     simulation_cases = {
-        "Takamatsu_1_v_600": "Z:/20260525_output_takamatsu/xy_vm00060000_0000.csv",
-        "Takamatsu_1_v_1200": "Z:/20260525_output_takamatsu/xy_vm00120000_0000.csv"
+        # "Takamatsu_1_v_600": "Z:/20260525_output_takamatsu/xy_vm00060000_0000.csv",
+        # "Takamatsu_1_v_750": "Z:/20260525_output_takamatsu/xy_vm00075000_0000.csv",
+        # "Takamatsu_1_v_900": "Z:/20260525_output_takamatsu/xy_vm00090000_0000.csv",
+        # "Takamatsu_1_v_1050": "Z:/20260525_output_takamatsu/xy_vm00105000_0000.csv",
+        # "Takamatsu_1_v_1200": "Z:/20260525_output_takamatsu/xy_vm00120000_0000.csv"
+        "Takamatsu_2_v_600_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00060000_0000.csv",
+        "Takamatsu_2_v_750_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00075000_0000.csv",
+        "Takamatsu_2_v_900_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00090000_0000.csv",
+        "Takamatsu_2_v_1050_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00105000_0000.csv",
+        "Takamatsu_2_v_1200_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_vm00120000_0000.csv",
+        # "Takamatsu_2_u_600_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00060000_0000.csv",
+        # "Takamatsu_2_u_750_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00075000_0000.csv",
+        # "Takamatsu_2_u_900_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00090000_0000.csv",
+        # "Takamatsu_2_u_1050_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00105000_0000.csv",
+        # "Takamatsu_2_u_1200_noncyclic": "Z:/20260526_output_Takamatsu_2_noncyclic/xy_um00120000_0000.csv"
     }
     
     # The specific height layer you want to visualize
