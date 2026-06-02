@@ -43,7 +43,7 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     # Add elements to the scene
     plotter.add_mesh(poly, color="cyan", line_width=0.5, opacity=0.5, label="Particle Trajectories")
     plotter.add_mesh(sensor_box, color="magenta", opacity=0.3, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", style="wireframe", line_width=2) # Box outline
+    plotter.add_mesh(sensor_box, color="red", opacity=0.3, style="wireframe", line_width=2) # Box outline
 
     # Add a simple ground plane for reference (adjust to your domain size)
     ground = pv.Plane(center=(512, 128, 0), direction=(0, 0, 1), i_size=1024, j_size=256)
@@ -60,10 +60,31 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
 
     # Save the output safely
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    # Use plotter.screenshot if just want to save picture, plotter.show if want to view and move the camera around
-    print(f"Interactive window opened.")
-    print(f"Rotate to the desired angle, then press 'q' on your keyboard to save and close.")
+    # Define a function to take a screenshot of the resulting 3d interactive plot
+    # Use a list for the counter so it can be modified inside the nested function
+    snap_counter = [1] 
 
-    plotter.show(screenshot=save_path, auto_close=False)
-    # plotter.screenshot(save_path)
-    plotter.close()
+    # Create a custom function to take the screenshot with an incrementing name
+    def take_snap():
+        # Split the path to insert the number before the ".png"
+        base_name, ext = os.path.splitext(save_path)
+        
+        # Format the new path (e.g., "...peak_source_2129_steps_1200-1500_01.png")
+        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
+        
+        # Take the screenshot
+        plotter.screenshot(unique_save_path)
+        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
+        
+        # Increment the counter for the next picture
+        snap_counter[0] += 1
+
+    # Bind that function to the 's' key
+    plotter.add_key_event('s', take_snap)
+
+    print("Interactive window opened.")
+    print("Press 's' on your keyboard at any time to take a screenshot.")
+    print("Close the window or press 'q' when you are done.")
+    
+    # Show the plot
+    plotter.show()
