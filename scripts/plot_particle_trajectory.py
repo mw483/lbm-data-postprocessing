@@ -26,7 +26,7 @@ def main():
     loc_folder = f"loc_{sensor_center[0]}_{sensor_center[1]}_{sensor_center[2]}"
     
     output_path = os.path.join(
-        "../figures", "trajectories", sensor_folder, loc_folder,
+        "../figures", "20260527_particle_flat_trajectories", sensor_folder, loc_folder,
         f"peak_source_{target_source_id}_steps_{start_step}-{end_step}.png"
     )
     

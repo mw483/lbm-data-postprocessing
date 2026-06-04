@@ -13,13 +13,13 @@ def main():
     # Update these base paths to match your local/mounted Z: drive setup
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    output_dir = r"figures\20260527_flat_footprints"
+    output_dir = r"../figures/20260527_flat_footprints/raw_footprints/sensor_40x40x8"
     
     # List of sensors to process (x, y, z)
     sensors = [
-        (600, 128, 10),
-        (600, 96, 10),
-        (600, 160, 10)
+        (600, 128, 50),
+        (600, 96, 50),
+        (600, 160, 50)
     ]
     
     # Known domain bounds: 512 grids * 2m = 1024m (X), 128 grids * 2m = 256m (Y)
