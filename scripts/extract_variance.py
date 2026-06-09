@@ -22,8 +22,8 @@ def main():
     target_grids = [5, 10, 15, 20, 24, 28] 
     
     # Instantiate parser. 
-    # (Note: Set ny_rows to 257 since you previously observed the Y-matrix spanning Rows 3 to 259)
-    parser = XYStackedParser(ny_rows=257)
+    # (Note: Set ny_rows to 128 since there are 128 rows per layer)
+    parser = XYStackedParser(ny_rows=128)
     
     print(f"Loading XY Variance (vv) from: {vv_file}")
     vv_data = parser.parse_file(vv_file)
