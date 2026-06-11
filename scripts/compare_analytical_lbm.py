@@ -15,7 +15,7 @@ from physics_core.footprint_processing import (
     merge_counts_with_positions,
     points_to_grid
 )
-from plotting_core.footprint_plots import plot_footprint_overlay
+from plotting_core.footprint_plots import plot_side_by_side_comparison
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     y_bounds = [0, 256]
     sensor_x = 600
     sensor_y = 128
-    contour_levels = [0.2, 0.4, 0.6, 0.8] # Set contour %
+    contour_levels = [0.8, 0.6, 0.4, 0.2] # Set contour %
 
     # 2. Load Atmospheric Parameters
     params = load_json_config(params_path)
@@ -129,13 +129,13 @@ def main():
         # ==========================================================
         # STEP C: VISUAL OVERLAY
         # ==========================================================
-        save_path = os.path.join(output_dir, f"overlay_lbm_schmid_z{sz}.png")
-        plot_footprint_overlay(
+        save_path = os.path.join(output_dir, f"side_by_side_z{sz}.png")
+        plot_side_by_side_comparison(
             X=X_fine, Y=Y_fine, 
             lbm_pdf=lbm_pdf_fine, schmid_pdf=schmid_pdf_fine, 
-            lbm_thresh=lbm_thresh_80, schmid_thresh=schmid_thresh_80,
+            lbm_thresholds=lbm_thresholds, schmid_thresholds=schmid_thresholds,
             sensor_pos=(sensor_x, sensor_y), 
-            title=f"Footprint Overlay: LBM vs Schmid (Zm = {sz}m)", 
+            title=f"Normalized Footprint Comparison (Zm = {sz}m)", 
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )
         print(f"  -> Saved overlay to {save_path}")

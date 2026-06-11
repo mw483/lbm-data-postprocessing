@@ -78,3 +78,80 @@ def plot_footprint_overlay(X, Y, lbm_pdf, schmid_pdf, lbm_thresh, schmid_thresh,
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
     plt.close()
+
+def plot_side_by_side_comparison(X, Y, lbm_pdf, schmid_pdf, lbm_thresholds, schmid_thresholds, 
+                                 sensor_pos, title, save_path, x_bounds=[0, 1024], y_bounds=[0, 256]):
+    """
+    Plots LBM and Schmid footprints side-by-side as normalized heatmaps with nested white contours.
+    """
+    # 1. PEAK NORMALIZATION (Forces both grids to span 0.0 to 1.0)
+    lbm_max = np.max(lbm_pdf)
+    schmid_max = np.max(schmid_pdf)
+    
+    lbm_norm = lbm_pdf / lbm_max
+    schmid_norm = schmid_pdf / schmid_max
+    
+    # Normalize the contour thresholds to match the new 0-1 scale
+    lbm_thresh_norm = [t / lbm_max for t in lbm_thresholds]
+    schmid_thresh_norm = [t / schmid_max for t in schmid_thresholds]
+
+    # 2. Setup Figure
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 5), sharey=True)
+    fig.suptitle(title, fontsize=16, y=1.05)
+    
+    # --- COLOR SCALE OPTIONS ---
+    cmap = 'jet'
+    
+    # OPTION A: Linear Scale (Default)
+    mesh_kwargs = {'cmap': cmap, 'vmin': 0, 'vmax': 1, 'shading': 'auto'}
+    
+    # OPTION B: Logarithmic Scale 
+    # (Uncomment the line below to reveal the faint upwind tail)
+    # mesh_kwargs = {'cmap': cmap, 'norm': LogNorm(vmin=1e-4, vmax=1), 'shading': 'auto'}
+
+    # Line styles for 20%, 40%, 60%, 80%
+    line_styles = ['dotted', 'dashdot', 'dashed', 'solid']
+
+    # ==========================================
+    # PANEL 1: LBM DATA
+    # ==========================================
+    im1 = ax1.pcolormesh(X, Y, lbm_norm, **mesh_kwargs)
+    
+    # Draw nested contours
+    ax1.contour(X, Y, lbm_norm, levels=lbm_thresh_norm, colors='white', 
+                linewidths=1.5, linestyles=line_styles, alpha=0.9)
+    
+    ax1.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax1.set_title("LBM-LES Plume (Closed Domain)", fontsize=14)
+    ax1.set_xlabel("Downwind Distance X [m]", fontsize=12)
+    ax1.set_ylabel("Crosswind Distance Y [m]", fontsize=12)
+    ax1.set_xlim(x_bounds[0], x_bounds[1])
+    ax1.set_ylim(y_bounds[0], y_bounds[1])
+    ax1.set_aspect('equal', adjustable='box')
+
+    # ==========================================
+    # PANEL 2: SCHMID (1994) MODEL
+    # ==========================================
+    im2 = ax2.pcolormesh(X, Y, schmid_norm, **mesh_kwargs)
+    
+    # Draw nested contours
+    ax2.contour(X, Y, schmid_norm, levels=schmid_thresh_norm, colors='white', 
+                linewidths=1.5, linestyles=line_styles, alpha=0.9)
+    
+    ax2.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax2.set_title("Schmid 1994 (Infinite Domain)", fontsize=14)
+    ax2.set_xlabel("Downwind Distance X [m]", fontsize=12)
+    ax2.set_xlim(x_bounds[0], x_bounds[1])
+    ax2.set_aspect('equal', adjustable='box')
+
+    # ==========================================
+    # GLOBAL FORMATTING
+    # ==========================================
+    # Add a single shared colorbar for both plots
+    cbar = fig.colorbar(im1, ax=[ax1, ax2], pad=0.02, aspect=30)
+    cbar.set_label('Normalized Contribution Density ($P / P_{max}$)', rotation=270, labelpad=20, fontsize=12)
+
+    # Save output securely
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)

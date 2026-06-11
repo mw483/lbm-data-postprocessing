@@ -2,54 +2,56 @@ import numpy as np
 
 def calculate_analytical_footprint(X, Y, sensor_x, sensor_y, zm, u_star, z0, sigma_v):
     """
-    Generates a 2D analytical footprint based on Schmid (1994) / Schuepp (1990) theory.
-    
-    Args:
-        X, Y: 2D meshgrids of coordinates [m]
-        sensor_x, sensor_y: Location of the sensor [m]
-        zm: Measurement height [m]
-        u_star: Friction velocity [m/s]
-        z0: Aerodynamic roughness length [m]
-        sigma_v: Crosswind standard deviation [m/s]
-        
-    Returns:
-        pdf_grid: 2D array of footprint probabilities [m^-2]
+    Generates the true Schmid (1994) SAM footprint using Van Ulden (1978) 
+    vertical dispersion physics (s=1.5).
     """
-    kappa = 0.40
+    # 1. Van Ulden & Atmospheric Constants
+    kappa = 0.35
+    s = 1.5
+    A = 0.73
+    B = 0.66
+    p = 1.55
     
-    # 1. Calculate the mean wind speed at the sensor height using our log-law
-    U_mean = (u_star / kappa) * np.log(zm / z0)
-    
-    # 2. Calculate Upwind Distance from the sensor
-    # We use np.maximum to prevent divide-by-zero exactly at the sensor location
+    # 2. Upwind Distance from sensor
     x_dist = np.maximum(sensor_x - X, 0.001) 
     
-    # 3. The 1D Crosswind-Integrated Footprint (CWIF)
-    # Based on the analytical advection-diffusion solution
-    numerator = U_mean * zm
-    denominator = kappa * u_star * (x_dist**2)
-    exponent = - (U_mean * zm) / (kappa * u_star * x_dist)
+    # =================================================================
+    # 3. SOLVE MEAN PLUME HEIGHT (z_bar) FOR EVERY GRID CELL
+    # =================================================================
+    # Create a theoretical 1D array of z_bar from the ground up to 10x the sensor height
+    z_bar_theory = np.linspace(z0/p + 0.001, zm * 10, 5000)
     
-    # fy(x) is the 1D probability density [m^-1]
-    fy = (numerator / denominator) * np.exp(exponent)
+    # Calculate the theoretical fetch (x) required to reach each z_bar
+    # Derived from integrating: dx = (0.74/kappa^2) * ln(p*z_bar/z0) d(z_bar)
+    phi_h_neutral = 0.74  # Turbulent Prandtl Number for neutral passive scalars
+
+    x_theory = phi_h_neutral * ( (z_bar_theory / kappa**2) * (np.log(p * z_bar_theory / z0) - 1) + (z0 / (p * kappa**2)) )
     
-    # Zero out any values that are downwind of the sensor (x_dist < 0)
-    fy[X >= sensor_x] = 0.0
+    # Use ultra-fast 1D interpolation to map the theoretical z_bar onto our actual 2D grid
+    z_bar_grid = np.interp(x_dist, x_theory, z_bar_theory)
     
-    # 4. The Crosswind Dispersion (Lateral Spread)
-    # The plume width (sigma_y) grows linearly with time/distance
-    sigma_y = sigma_v * (x_dist / U_mean)
+    # =================================================================
+    # 4. SCHMID (1994) CONCENTRATION FOOTPRINT EQUATIONS
+    # =================================================================
+    # Effective Advection Velocity U_e(x) evaluated at height p * z_bar
+    U_e = (u_star / kappa) * np.log(p * z_bar_grid / z0)
     
-    # 5. The 2D Gaussian Crosswind Distribution
+    # Vertical Concentration Distribution D_z(x, zm)
+    Dz = (A / z_bar_grid) * np.exp(- (B * zm / z_bar_grid)**s)
+    
+    # 1D Crosswind-Integrated Footprint fy(x) = Dz / U_e
+    fy = Dz / U_e
+    fy[X >= sensor_x] = 0.0  # Zero out anything downwind of the sensor
+    
+    # Crosswind Spread (sigma_y) based on effective advection time
+    sigma_y = sigma_v * (x_dist / U_e)
+    
+    # 2D Gaussian Crosswind Distribution D_y(x, y)
     y_dist = Y - sensor_y
+    Dy = (1.0 / (np.sqrt(2 * np.pi) * sigma_y)) * np.exp(-0.5 * (y_dist / sigma_y)**2)
     
-    # Dy(x,y) distributes the 1D fy(x) mass laterally across the Y-axis [m^-1]
-    Dy = (1.0 / (np.sqrt(2 * np.pi) * sigma_y)) * np.exp(- (y_dist**2) / (2 * sigma_y**2))
-    
-    # 6. The Final 2D Footprint [m^-2]
+    # Final 2D Footprint (Source Weight Function)
     f_xy = fy * Dy
-    
-    # Clean up any potential NaNs from the zero-distance clipping
     f_xy = np.nan_to_num(f_xy, 0.0)
     
     return f_xy
