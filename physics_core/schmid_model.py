@@ -10,7 +10,13 @@ def calculate_analytical_footprint(X, Y, sensor_x, sensor_y, zm, u_star, z0, sig
     s = 1.5
     A = 0.73
     B = 0.66
-    p = 1.55
+    p = 1.55 # Van Ulden 1978
+
+    # Chatwin (1968)
+    # s = 1.0
+    # A = 1.0
+    # B = 1.0
+    # p = 0.562 # Horst & Weil (1992), Chatwin (1968)
     
     # 2. Upwind Distance from sensor
     x_dist = np.maximum(sensor_x - X, 0.001) 
