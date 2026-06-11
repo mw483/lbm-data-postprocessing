@@ -11,6 +11,7 @@ def calculate_analytical_footprint(X, Y, sensor_x, sensor_y, zm, u_star, z0, sig
     A = 0.73
     B = 0.66
     p = 1.55 # Van Ulden 1978
+    gamma = 0.66 # Horst & Weil (1992), Van Ulden (1978), Chatwin (1968)
 
     # Chatwin (1968)
     # s = 1.0
@@ -40,7 +41,7 @@ def calculate_analytical_footprint(X, Y, sensor_x, sensor_y, zm, u_star, z0, sig
     # 4. SCHMID (1994) CONCENTRATION FOOTPRINT EQUATIONS
     # =================================================================
     # Effective Advection Velocity U_e(x) evaluated at height p * z_bar
-    U_e = (u_star / kappa) * np.log(p * z_bar_grid / z0)
+    U_e = (u_star / kappa) * np.log(np.exp(-gamma) * z_bar_grid / z0)
     
     # Vertical Concentration Distribution D_z(x, zm)
     Dz = (A / z_bar_grid) * np.exp(- (B * zm / z_bar_grid)**s)
