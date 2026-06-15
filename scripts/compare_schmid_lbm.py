@@ -15,7 +15,7 @@ from physics_core.footprint_processing import (
     merge_counts_with_positions,
     points_to_grid
 )
-from plotting_core.footprint_plots import plot_side_by_side_comparison
+from plotting_core.footprint_plots import plot_model_comparison
 
 
 def main():
@@ -129,16 +129,17 @@ def main():
         # ==========================================================
         # STEP C: VISUAL OVERLAY
         # ==========================================================
-        save_path = os.path.join(output_dir, f"side_by_side_z{sz}.png")
-        plot_side_by_side_comparison(
+        save_path = os.path.join(output_dir, f"side_by_side_lbm_schmid_z{sz}.png")
+        plot_model_comparison(
             X=X_fine, Y=Y_fine, 
-            lbm_pdf=lbm_pdf_fine, schmid_pdf=schmid_pdf_fine, 
-            lbm_thresholds=lbm_thresholds, schmid_thresholds=schmid_thresholds,
+            lbm_pdf=lbm_pdf_fine, model_pdf=schmid_pdf_fine, 
+            lbm_thresholds=lbm_thresholds, model_thresholds=schmid_thresholds,
             sensor_pos=(sensor_x, sensor_y), 
-            title=f"Normalized Footprint Comparison (Zm = {sz}m)", 
+            title=f"Footprint Comparison: LBM vs Schmid (Zm = {sz}m)",
+            model_title=f"Schmid (1994)", 
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )
-        print(f"  -> Saved overlay to {save_path}")
+        print(f"  -> Saved Schmid comparison to {save_path}")
 
 if __name__ == "__main__":
     main()
