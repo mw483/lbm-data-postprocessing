@@ -16,11 +16,11 @@ from plotting_core.footprint_plots import plot_model_comparison
 
 def main():
     # 1. Paths and Setup
-    base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072"
+    base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8"
     pos_file = r"Z:\particle_position\particle_position.txt"
     params_path = r"../physics_core/metrics/schmid_params.json"
     lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
-    output_dir = r"../figures/20260527_kljun_comparisons"
+    output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_kljun_comparisons"
     os.makedirs(output_dir, exist_ok=True)
     
     x_bounds = [0, 1024]
@@ -102,7 +102,7 @@ def main():
             lbm_pdf=lbm_pdf_fine, model_pdf=kljun_pdf_fine, 
             lbm_thresholds=lbm_thresholds, model_thresholds=kljun_thresholds,
             sensor_pos=(sensor_x, sensor_y), 
-            title=f"Footprint Comparison: LBM vs Kljun FFP (Zm = {sz}m)",
+            title=f"Footprint Comparison: LBM vs Kljun FFP (Zm = {sz}m), 40x40x8 Sensor",
             model_title="Kljun et al. (2015) FFP",
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )
