@@ -13,7 +13,7 @@ def main():
     # Update these base paths to match your local/mounted Z: drive setup
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    output_dir = r"../figures/20260527_flat_footprints/raw_footprints/sensor_40x40x8"
+    output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_flat_footprints/raw_footprints"
     
     # List of sensors to process (x, y, z)
     sensors = [
