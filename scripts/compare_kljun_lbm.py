@@ -27,9 +27,7 @@ def main():
     base_out = r"Z:\20260527_output_flat_3072"
     um_csv = os.path.join(base_out, "xz_yav_um00180000_0000.csv")
     vm_csv = os.path.join(base_out, "xz_yav_vm00180000_0000.csv")
-    wm_csv = os.path.join(base_out, "xz_yav_wm00180000_0000.csv")
     vv_csv = os.path.join(base_out, "xz_yav_vv00180000_0000.csv")
-    uw_csv = os.path.join(base_out, "xz_yav_uw00180000_0000.csv")
 
     output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_kljun_comparisons"
     os.makedirs(output_dir, exist_ok=True)

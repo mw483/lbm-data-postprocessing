@@ -4,7 +4,7 @@ import sys
 # Ensure modules can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from data_loaders.trajectory_io import load_source_trajectories
+from data_loaders.particle_io import load_source_trajectories
 from plotting_core.trajectory_3d import plot_trajectories_with_sensor
 
 def main():
