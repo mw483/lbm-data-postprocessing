@@ -47,10 +47,10 @@ def main():
     ax1.grid(True, linestyle=':', alpha=0.7)
     
     # Add an annotation explaining the physics
-    ax1.annotate('High ground-level mixing\nwidens the LBM plume.', 
-                 xy=(sig_v[0], z_sig[0]), xytext=(sig_v[0]-0.01, z_sig[0]+15),
-                 arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6),
-                 fontsize=10, bbox=dict(boxstyle="round", fc="w", alpha=0.8))
+    # ax1.annotate('High ground-level mixing\nwidens the LBM plume.', 
+    #              xy=(sig_v[0], z_sig[0]), xytext=(sig_v[0]-0.01, z_sig[0]+15),
+    #              arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6),
+    #              fontsize=10, bbox=dict(boxstyle="round", fc="w", alpha=0.8))
 
     # PANEL 2: Mean Wind Speed (U)
     ax2.plot(u_lbm, z_lbm, 'bo-', linewidth=2, markersize=4, alpha=0.7)

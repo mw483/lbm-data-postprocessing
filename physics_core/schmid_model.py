@@ -32,7 +32,20 @@ def calculate_analytical_footprint(X, Y, sensor_x, sensor_y, zm, u_star, z0, sig
     # Derived from integrating: dx = (0.74/kappa^2) * ln(p*z_bar/z0) d(z_bar)
     phi_h_neutral = 0.74  # Turbulent Prandtl Number for neutral passive scalars
 
-    x_theory = phi_h_neutral * ( (z_bar_theory / kappa**2) * (np.log(p * z_bar_theory / z0) - 1) + (z0 / (p * kappa**2)) )
+    # -----------------------------------------------------------------
+    # OLD STRICT INTEGRAL:
+    # x_theory = phi_h_neutral * ( (z_bar_theory / kappa**2) * (np.log(p * z_bar_theory / z0) - 1) + (z0 / (p * kappa**2)) )
+    # -----------------------------------------------------------------
+    
+    # NEW IMPLEMENTATION: Van Ulden (1978) Equation 17a (Neutral Limit)
+    # When L -> infinity, the stability terms collapse to 0, leaving:
+    c_vu = 0.6  # Van Ulden's published simplification constant for Eq 17a
+    
+    # Calculate integration constant x0 (so x = 0 when z_bar = z0)
+    x0 = (phi_h_neutral / kappa**2) * z0 * np.log(c_vu * z0 / z0) 
+    
+    # Van Ulden Eq 17a:
+    x_theory = (phi_h_neutral / kappa**2) * z_bar_theory * np.log(c_vu * z_bar_theory / z0) - x0
     
     # Use ultra-fast 1D interpolation to map the theoretical z_bar onto our actual 2D grid
     z_bar_grid = np.interp(x_dist, x_theory, z_bar_theory)

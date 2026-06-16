@@ -7,11 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.config_loader import load_json_config
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
+from data_loaders.lbm_parsers import XZMatrixParser  # <-- Imported your parser
 from physics_core.footprint_processing import (
     smooth_footprint_grid, refine_footprint_grid, 
     get_contour_thresholds, merge_counts_with_positions, points_to_grid
 )
 from physics_core.kljun_wrapper import calculate_kljun_ffp_grid
+from physics_core.turbulence import calc_sigma_v, calc_u_star
 from plotting_core.footprint_plots import plot_model_comparison
 
 def main():
@@ -19,7 +21,16 @@ def main():
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8"
     pos_file = r"Z:\particle_position\particle_position.txt"
     params_path = r"../physics_core/metrics/schmid_params.json"
-    lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
+    # lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
+
+    # NEW: XZ Matrix Paths
+    base_out = r"Z:\20260527_output_flat_3072"
+    um_csv = os.path.join(base_out, "xz_yav_um00180000_0000.csv")
+    vm_csv = os.path.join(base_out, "xz_yav_vm00180000_0000.csv")
+    wm_csv = os.path.join(base_out, "xz_yav_wm00180000_0000.csv")
+    vv_csv = os.path.join(base_out, "xz_yav_vv00180000_0000.csv")
+    uw_csv = os.path.join(base_out, "xz_yav_uw00180000_0000.csv")
+
     output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_kljun_comparisons"
     os.makedirs(output_dir, exist_ok=True)
     
@@ -29,17 +40,29 @@ def main():
     sensor_y = 128.0
     contour_levels = [0.8, 0.6, 0.4, 0.2]
 
+    # Grid properties for matrix indexing
+    dx_lbm = 2.0
+    dz_lbm = 2.0
+
     # 2. Load Parameters
     params = load_json_config(params_path)
     u_star = params["u_star"]
     z0 = params["z0"]
-    sigma_v_dict = params["sigma_v"]
+    # sigma_v_dict = params["sigma_v"]
     sensor_heights = [10, 20, 30, 40, 48, 56]
     
-    # Load LBM Vertical Profile to extract exact 'umean'
-    df_lbm = pd.read_csv(lbm_profile_csv, skiprows=1, header=0)
-    z_lbm = df_lbm['z'].values
-    u_lbm = df_lbm['U'].values
+    print("Loading Virtual Tower XZ fluid matrices...")
+    um_mat = XZMatrixParser.parse_file(um_csv)
+    vm_mat = XZMatrixParser.parse_file(vm_csv)
+    vv_mat = XZMatrixParser.parse_file(vv_csv)
+    
+    if any(m is None for m in [um_mat, vm_mat, vv_mat]):
+        print("[ERROR] Failed to load one or more XZ matrices. Exiting.")
+        sys.exit(1)
+
+    # Calculate the exact X index for the sensor (e.g., 600m / 2m = index 300)
+    # Using int() combined with min() to ensure we don't accidentally index out of bounds
+    x_idx = min(int(sensor_x / dx_lbm), um_mat.shape[1] - 1)
 
     # Kljun specific Boundary Conditions
     h = 160.0       # Domain Height
@@ -52,23 +75,27 @@ def main():
     print("--- Commencing Kljun (2015) FFP vs LBM Comparison ---")
     
     for sz in sensor_heights:
-        sz_str = str(sz)
-        if sz_str not in sigma_v_dict:
-            continue
-            
-        sigma_v = sigma_v_dict[sz_str]
+        # Calculate exact Z index
+        # (Subtracting 1 in case Z=160m maps to index 79 rather than 80 on an 80-grid system)
+        z_idx = min(int(sz / dz_lbm), um_mat.shape[0] - 1)
+
+        # 1. Mean Wind Speed (Streamwise)
+        umean_zm = um_mat[z_idx, x_idx]
         
-        # Interpolate exact LBM U-mean at the current sensor height
-        umean_zm = np.interp(sz, z_lbm, u_lbm)
+        # 2. Local Lateral Turbulence (Reynolds Decomposition)
+        vv_val = vv_mat[z_idx, x_idx]
+        vm_val = vm_mat[z_idx, x_idx]
+        sigma_v_local = calc_sigma_v(vv_val, vm_val)
         
-        print(f"\nProcessing Z={sz}m (sigma_v={sigma_v:.4f}, umean={umean_zm:.2f} m/s)...")
+        print(f"\nProcessing Z={sz}m | Virtual Tower Data:")
+        print(f"  -> U_mean: {umean_zm:.2f} m/s, sigma_v: {sigma_v_local:.4f}, u*: {u_star:.4f}")
         
         # ==========================================
-        # STEP A: LOAD LBM DATA (Mirroring Schmid)
+        # STEP A: LOAD LBM DATA
         # ==========================================
         csv_path = os.path.join(base_dir, "1200-1800_footprint", f"footprint_{int(sensor_x)}_{int(sensor_y)}_{sz}.csv")
         if not os.path.exists(csv_path):
-            print(f"Skipping {csv_path} - not found.")
+            print(f"  [!] Skipping {csv_path} - not found.")
             continue
             
         count_map = load_footprint_counts(csv_path)
@@ -89,7 +116,7 @@ def main():
         # ==========================================
         kljun_pdf_fine = calculate_kljun_ffp_grid(
             X_fine, Y_fine, sensor_x, sensor_y, 
-            zm=sz, z0=z0, umean=umean_zm, h=h, ol=ol, sigmav=sigma_v, ustar=u_star, wind_dir=wind_dir
+            zm=sz, z0=z0, umean=umean_zm, h=h, ol=ol, sigmav=sigma_v_local, ustar=u_star, wind_dir=wind_dir
         )
         kljun_thresholds = get_contour_thresholds(kljun_pdf_fine, dx=1.0, dy=1.0, levels=contour_levels)
         

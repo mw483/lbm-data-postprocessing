@@ -20,10 +20,10 @@ from plotting_core.footprint_plots import plot_model_comparison
 
 def main():
     # 1. Paths and Setup
-    base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072"
+    base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8"
     pos_file = r"Z:\particle_position\particle_position.txt"
     params_path = r"../physics_core/metrics/schmid_params.json"
-    output_dir = r"../figures/20260527_schmid_comparisons"
+    output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_schmid_comparisons"
     os.makedirs(output_dir, exist_ok=True)
     
     x_bounds = [0, 1024]
@@ -135,7 +135,7 @@ def main():
             lbm_pdf=lbm_pdf_fine, model_pdf=schmid_pdf_fine, 
             lbm_thresholds=lbm_thresholds, model_thresholds=schmid_thresholds,
             sensor_pos=(sensor_x, sensor_y), 
-            title=f"Footprint Comparison: LBM vs Schmid (Zm = {sz}m)",
+            title=f"Footprint Comparison: LBM vs Schmid (Zm = {sz}m), 40x40x8 Sensor",
             model_title=f"Schmid (1994)", 
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )

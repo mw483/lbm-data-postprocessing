@@ -17,9 +17,9 @@ def main():
     
     # List of sensors to process (x, y, z)
     sensors = [
-        (600, 128, 20),
-        (600, 96, 20),
-        (600, 160, 20)
+        (600, 128, 56),
+        (600, 96, 56),
+        (600, 160, 56)
     ]
     
     # Known domain bounds: 512 grids * 2m = 1024m (X), 128 grids * 2m = 256m (Y)
