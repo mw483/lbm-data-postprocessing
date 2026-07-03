@@ -18,7 +18,11 @@ from plotting_core.footprint_plots import plot_model_comparison
 
 def main():
     # 1. Paths and Setup
-    base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8"
+    sensor_size_x = 40
+    sensor_size_y = 40
+    sensor_size_z = 8
+
+    base_dir = rf"Z:\Particle_PostProcess_Outputs\20260619_particle_flat_halfVSGS\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
     pos_file = r"Z:\particle_position\particle_position.txt"
     params_path = r"../physics_core/metrics/schmid_params.json"
     # lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
@@ -29,7 +33,7 @@ def main():
     vm_csv = os.path.join(base_out, "xz_yav_vm00180000_0000.csv")
     vv_csv = os.path.join(base_out, "xz_yav_vv00180000_0000.csv")
 
-    output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_kljun_comparisons"
+    output_dir = rf"../figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/20260619_halfVSGS_kljun_comparisons"
     os.makedirs(output_dir, exist_ok=True)
     
     x_bounds = [0, 1024]
@@ -47,7 +51,7 @@ def main():
     u_star = params["u_star"]
     z0 = params["z0"]
     # sigma_v_dict = params["sigma_v"]
-    sensor_heights = [10, 20, 30, 40, 48, 56]
+    sensor_heights = [10, 20, 30, 40]
     
     print("Loading Virtual Tower XZ fluid matrices...")
     um_mat = XZMatrixParser.parse_file(um_csv)
@@ -70,7 +74,7 @@ def main():
     print("Loading source positions...")
     source_map = load_source_positions(pos_file)
     
-    print("--- Commencing Kljun (2015) FFP vs LBM Comparison ---")
+    print("--- Commencing Kljun (2015) FFP vs LBM (0.5 V SGS) Comparison ---")
     
     for sz in sensor_heights:
         # Calculate exact Z index
@@ -121,13 +125,13 @@ def main():
         # ==========================================
         # STEP C: PLOT COMPARISON
         # ==========================================
-        save_path = os.path.join(output_dir, f"side_by_side_lbm_kljun_z{sz}.png")
+        save_path = os.path.join(output_dir, f"side_by_side_lbmHalfV_kljun_z{sz}.png")
         plot_model_comparison(
             X=X_fine, Y=Y_fine, 
             lbm_pdf=lbm_pdf_fine, model_pdf=kljun_pdf_fine, 
             lbm_thresholds=lbm_thresholds, model_thresholds=kljun_thresholds,
             sensor_pos=(sensor_x, sensor_y), 
-            title=f"Footprint Comparison: LBM vs Kljun FFP (Zm = {sz}m), 40x40x8 Sensor",
+            title=f"Footprint Comparison: LBM (0.5 V SGS) vs Kljun FFP (Zm = {sz}m), {sensor_size_x}x{sensor_size_y}x{sensor_size_z} Sensor",
             model_title="Kljun et al. (2015) FFP",
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )
