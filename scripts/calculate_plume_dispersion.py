@@ -11,7 +11,7 @@ def main():
     # 1. Paths
     bin_dir = r"Z:\20260527_particle_flat_3072"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    time_step = 1400
+    time_step = 1800
     
     idx_file = os.path.join(bin_dir, f"index0-{time_step}.bin")
     pos_file_bin = os.path.join(bin_dir, f"position0-{time_step}.bin")
