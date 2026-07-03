@@ -140,3 +140,105 @@ def plot_model_comparison(X, Y, lbm_pdf, model_pdf, lbm_thresholds, model_thresh
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     fig.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
+
+
+def plot_lbm_comparison(X, Y, lbm1_pdf, lbm2_pdf, lbm1_thresholds, lbm2_thresholds,
+                          sensor_pos, title, case1_title, case2_title, save_path, x_bounds=[0, 1024], y_bounds=[0, 256]):
+    """
+    Plots two LBM footprint cases side-by-side as normalized heatmaps.
+    """
+    # 1. PEAK NORMALIZATION (Forces both grids to span 0.0 to 1.0)
+    lbm1_max = np.max(lbm1_pdf)
+    lbm2_max = np.max(lbm2_pdf)
+    
+    lbm1_norm = lbm1_pdf / lbm1_max
+    lbm2_norm = lbm2_pdf / lbm2_max
+    
+    # Normalize the contour thresholds to match the new 0-1 scale
+    lbm1_thresh_norm = [t / lbm1_max for t in lbm1_thresholds]
+    lbm2_thresh_norm = [t / lbm2_max for t in lbm2_thresholds]
+
+    # 2. Setup Figure
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 5), sharey=True)
+    fig.suptitle(title, fontsize=16, y=1.05)
+    
+    cmap = 'jet'
+    mesh_kwargs = {'cmap': cmap, 'vmin': 0, 'vmax': 1, 'shading': 'auto'}
+    line_styles = ['dotted', 'dashdot', 'dashed', 'solid']
+
+    # ==========================================
+    # PANEL 1: LBM CASE 1 DATA
+    # ==========================================
+    im1 = ax1.pcolormesh(X, Y, lbm1_norm, **mesh_kwargs)
+    ax1.contour(X, Y, lbm1_norm, levels=lbm1_thresh_norm, colors='white', 
+                linewidths=1.5, linestyles=line_styles, alpha=0.9)
+    
+    ax1.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax1.set_title(case1_title, fontsize=14)
+    ax1.set_xlabel("Downwind Distance X [m]", fontsize=12)
+    ax1.set_ylabel("Crosswind Distance Y [m]", fontsize=12)
+    ax1.set_xlim(x_bounds[0], x_bounds[1])
+    ax1.set_ylim(y_bounds[0], y_bounds[1])
+    ax1.set_aspect('equal', adjustable='box')
+
+    # ==========================================
+    # PANEL 2: LBM CASE 2 DATA
+    # ==========================================
+    im2 = ax2.pcolormesh(X, Y, lbm2_norm, **mesh_kwargs)
+    ax2.contour(X, Y, lbm2_norm, levels=lbm2_thresh_norm, colors='white', 
+                linewidths=1.5, linestyles=line_styles, alpha=0.9)
+    
+    ax2.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax2.set_title(case2_title, fontsize=14)
+    ax2.set_xlabel("Downwind Distance X [m]", fontsize=12)
+    ax2.set_xlim(x_bounds[0], x_bounds[1])
+    ax2.set_aspect('equal', adjustable='box')
+
+    # ==========================================
+    # GLOBAL FORMATTING
+    # ==========================================
+    cbar = fig.colorbar(im1, ax=[ax1, ax2], pad=0.02, aspect=30)
+    cbar.set_label('Normalized Contribution Density ($P / P_{max}$)', rotation=270, labelpad=20, fontsize=12)
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    
+
+def plot_absolute_line_integrated_footprint(X, Y, pdf_grid, sensor_x, save_path, domain_extent=None):
+    """
+    Plots the line-integrated 2D smoothed footprint array across the absolute domain.
+    Replaces the single star marker with a prominent vertical sensor fence line.
+    """
+    fig, ax = plt.subplots(figsize=(12, 5)) # 4:1 wide aspect ratio matching LBM domain window
+    
+    # Render the continuous smoothed contribution density grid field
+    # vmin=0 forces the zero-contribution zones to sit at baseline dark blue
+    mesh = ax.pcolormesh(X, Y, pdf_grid, cmap='jet', vmin=0, shading='auto')
+    
+    # 1. CORE UPDATE: Displace sensor position as a vertical fence line across the entire Y span
+    ax.axvline(x=sensor_x, color='magenta', linestyle='--', linewidth=2.5, 
+               label=f'Sensor Line Array (X = {sensor_x}m)')
+    
+    # Formatting and labels
+    cbar = fig.colorbar(mesh, ax=ax, pad=0.02, aspect=25)
+    cbar.set_label('Smoothed Contribution Density [$m^{-2}$]', rotation=270, labelpad=20, fontsize=11)
+    
+    ax.set_title('Absolute Line-Integrated Source Footprint (Crosswind Integrated Network)', fontsize=14, pad=12)
+    ax.set_xlabel('Absolute X Coordinate [m]', fontsize=12)
+    ax.set_ylabel('Absolute Y Coordinate [m]', fontsize=12)
+    
+    # Apply domain constraint limits if provided ([0, 1024, 0, 256])
+    if domain_extent:
+        ax.set_xlim(domain_extent[0], domain_extent[1])
+        ax.set_ylim(domain_extent[2], domain_extent[3])
+        
+    ax.set_aspect('equal', adjustable='box')
+    ax.legend(loc='upper right', framealpha=0.9)
+    ax.grid(True, linestyle=':', alpha=0.5, color='white') # White grid lines show through jet cleanly
+    
+    # Save output securely
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    fig.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+    print(f"[✓] Saved line-integrated footprint figure to: {save_path}")
