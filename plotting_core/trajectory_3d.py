@@ -1,10 +1,15 @@
 import pyvista as pv
 import numpy as np
 import os
+import sys
 
-def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save_path):
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from data_loaders.map_io import create_voxel_buildings, load_lbm_map
+
+def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0):
     """
-    Renders 3D trajectories and a transparent sensor volume using PyVista.
+    Renders 3D trajectories, a transparent sensor volume, and the building map using PyVista.
+    Assumes particle coordinates and sensor parameters are ALREADY in physical meters.
     """
     if not trajectories:
         print("No trajectories to plot!")
@@ -18,7 +23,10 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
             continue
             
         start_idx = len(points)
-        points.extend(coords)
+        
+        # Keep coordinates EXACTLY as they are (already in meters)
+        scaled_coords = [(float(x), float(y), float(z)) for x, y, z in coords]
+        points.extend(scaled_coords)
         
         # PyVista line format: [number_of_points, index1, index2, ...]
         lines.append(len(coords))
@@ -27,29 +35,48 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     poly = pv.PolyData(points)
     poly.lines = lines
 
-    # 2. Define the Sensor Box bounds
-    cx, cy, cz = sensor_center
-    dx, dy, dz = sensor_size
+    # 2. Define the Sensor Box bounds (Already in meters!)
+    cx, cy, cz = sensor_center 
+    sx, sy, sz = sensor_size
+
     bounds = [
-        cx - dx/2, cx + dx/2,  # X min, X max
-        cy - dy/2, cy + dy/2,  # Y min, Y max
-        cz - dz/2, cz + dz/2   # Z min, Z max
+        cx - sx/2, cx + sx/2,  # X min, X max
+        cy - sy/2, cy + sy/2,  # Y min, Y max
+        cz - sz/2, cz + sz/2   # Z min, Z max
     ]
     sensor_box = pv.Box(bounds=bounds)
 
-    # 3. Setup the PyVista Plotter (off_screen=True prevents X11 server crashes on TSUBAME)
+    # 3. Setup the PyVista Plotter
     plotter = pv.Plotter(off_screen=False)
     
-    # Add elements to the scene
+    # Add Trajectories and Sensor
     plotter.add_mesh(poly, color="cyan", line_width=0.5, opacity=0.5, label="Particle Trajectories")
     plotter.add_mesh(sensor_box, color="magenta", opacity=0.3, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", opacity=0.3, style="wireframe", line_width=2) # Box outline
+    plotter.add_mesh(sensor_box, color="red", opacity=0.3, style="wireframe", line_width=2)
 
-    # Add a simple ground plane for reference (adjust to your domain size)
-    ground = pv.Plane(center=(512, 128, 0), direction=(0, 0, 1), i_size=1024, j_size=256)
-    plotter.add_mesh(ground, color="darkgreen", opacity=0.2)
+    # 4. Load and Add the Map (NO TILING)
+    if map_filepath and os.path.exists(map_filepath):
+        print(f"Loading map from {map_filepath}...")
+        elevation_mat, nx, ny = load_lbm_map(map_filepath)
+        
+        # Generate mesh (X/Y scaled by dx, Z scaled by 1.0 because height is in meters)
+        building_mesh = create_voxel_buildings(elevation_mat, nx, ny, resolution=dx)
+        
+        if building_mesh:
+            plotter.add_mesh(building_mesh, color="lightgray", opacity=1.0, 
+                             show_edges=True, edge_color="darkgray", label="Buildings")
+            print("Map loaded and added to scene.")
 
-    # Configure Camera and Lighting, as well as Plot Font Sizes
+        # Add a simple ground plane sized exactly to the map
+        ground = pv.Plane(
+            center=((nx*dx)/2, (ny*dx)/2, 0), 
+            direction=(0, 0, 1), 
+            i_size=nx*dx, 
+            j_size=ny*dx
+        )
+        plotter.add_mesh(ground, color="darkgreen", opacity=0.2)
+
+    # 5. Configure Camera and Lighting
     plotter.camera_position = 'iso'
     plotter.show_grid(
         font_size=10, 
@@ -58,33 +85,18 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     )
     plotter.add_legend()
 
-    # Save the output safely
+    # 6. Save output logic
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    # Define a function to take a screenshot of the resulting 3d interactive plot
-    # Use a list for the counter so it can be modified inside the nested function
     snap_counter = [1] 
 
-    # Create a custom function to take the screenshot with an incrementing name
     def take_snap():
-        # Split the path to insert the number before the ".png"
         base_name, ext = os.path.splitext(save_path)
-        
-        # Format the new path (e.g., "...peak_source_2129_steps_1200-1500_01.png")
         unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        
-        # Take the screenshot
         plotter.screenshot(unique_save_path)
         print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        
-        # Increment the counter for the next picture
         snap_counter[0] += 1
 
-    # Bind that function to the 's' key
     plotter.add_key_event('s', take_snap)
 
     print("Interactive window opened.")
-    print("Press 's' on your keyboard at any time to take a screenshot.")
-    print("Close the window or press 'q' when you are done.")
-    
-    # Show the plot
     plotter.show()

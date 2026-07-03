@@ -9,24 +9,28 @@ from plotting_core.trajectory_3d import plot_trajectories_with_sensor
 
 def main():
     # --- Configuration ---
-    bin_dir = r"Z:\20260527_particle_flat_3072"
+    bin_dir = r"Y:\20260612_particle_cube_3072"
+    map_dir = r"Y:\map\map_02_full_roughness.dat"
     
-    target_source_id = 2129  # Change this to whatever the PEAK source ID was in your CSV footprint
+    # IMPORTANT: Set this to your actual LBM grid resolution (usually 2.0m)
+    dx = 2.0 
+    
+    target_source_id = 1229  
     
     # Time step range
     start_step = 1200
-    end_step = 1500  # Start with 300 steps, going to 1800 might take longer to parse
+    end_step = 1500  
     
-    # Sensor Parameters
-    sensor_center = (600, 128, 10)
-    sensor_size = (40, 40, 8) # dx, dy, dz in meters
+    # Sensor Parameters - PASSED IN PHYSICAL METERS
+    sensor_center = (600, 128, 20) 
+    sensor_size = (8, 8, 8) 
     
-    # Dynamic output path generation based on sensitivity parameters
+    # Dynamic output path generation
     sensor_folder = f"sensor_{sensor_size[0]}x{sensor_size[1]}x{sensor_size[2]}"
     loc_folder = f"loc_{sensor_center[0]}_{sensor_center[1]}_{sensor_center[2]}"
     
     output_path = os.path.join(
-        "../figures", "20260527_particle_flat_trajectories", sensor_folder, loc_folder,
+        "../figures", "20260612_particle_cube_trajectories", sensor_folder, loc_folder,
         f"peak_source_{target_source_id}_steps_{start_step}-{end_step}.png"
     )
     
@@ -36,7 +40,9 @@ def main():
     print(f"Tracked {len(trajectories)} unique particles from this source.")
     
     print("Rendering 3D scene with PyVista...")
-    plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, output_path)
+    # NOTE: Ensure plot_trajectories_with_sensor only multiplies particle coordinates by dx, 
+    # and leaves the sensor_center/sensor_size alone since they are already in meters!
+    plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, output_path, map_dir, dx)
 
 if __name__ == "__main__":
     main()
