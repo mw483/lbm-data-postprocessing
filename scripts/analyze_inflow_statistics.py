@@ -10,7 +10,7 @@ from physics_core.turbulence import calc_sigma_v
 
 def main():
     # 1. Paths and Configuration
-    base_out = r"Z:\20260527_output_flat_3072"
+    base_out = r"Y:\20260703_output_flat_shortroughness"
     t_step = "00180000"  # The specific suffix for time step 1200
     
     um_csv = os.path.join(base_out, f"xz_yav_um{t_step}_0000.csv")
@@ -22,8 +22,8 @@ def main():
 
     dx_lbm = 2.0
     dz_lbm = 2.0
-    x_targets = [0, 300, 600] # Locations to extract vertical columns
-    colors = ['#d62728', '#2ca02c', '#1f77b4'] # Red, Green, Blue
+    x_targets = [0, 128, 428, 728] # Locations to extract vertical columns
+    colors = ['#d62728', '#2ca02c', '#1f77b4', "#6c1fb4"] # Red, Green, Blue, Purple
 
     print(f"Loading XZ fluid matrices for step {t_step}...")
     um_mat = XZMatrixParser.parse_file(um_csv)
@@ -81,7 +81,7 @@ def main():
     ax2.legend(loc='upper right')
 
     plt.tight_layout()
-    save_path = os.path.join(output_dir, f"inflow_turbulence_development_{t_step}.png")
+    save_path = os.path.join(output_dir, f"shortroughness_inflow_turbulence_development_{t_step}.png")
     plt.savefig(save_path, dpi=300)
     
     print(f"Success! Saved inflow development plot to: {save_path}")
