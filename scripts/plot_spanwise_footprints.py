@@ -10,7 +10,7 @@ if python_root not in sys.path:
     sys.path.insert(0, python_root)
 
 # Explicitly point to your professor's requested figures subdirectory
-figure_output_dir = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat/height20"))
+figure_output_dir = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))
 
 # Import your verified modular I/O and Processing libraries
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
@@ -29,9 +29,9 @@ def main():
     print("=================================================================\n")
 
     # --- 2. Environmental Configurations ---
-    base_dir = "Y:/Particle_PostProcess_Outputs/20260527_particle_flat_3072/sensor_8x8x8/1200-1800_footprint"
+    base_dir = "Y:/Particle_PostProcess_Outputs/20260703_particle_flat_shortroughness/sensor_8x8x8/1200-1800_footprint"
     source_dir = "Y:/particle_position"
-    source_file = os.path.join(source_dir, "pos_flat_3072.txt")
+    source_file = os.path.join(source_dir, "particle_position.txt")
     output_image = os.path.join(figure_output_dir, "spanwise_ensemble_comparison.png")
     
     # Ensure targeted figure subdirectory exists
@@ -43,11 +43,11 @@ def main():
     
     # Eulerian Binning Resolution Configs
     dx, dy = 2.0, 2.0  # Grid mesh resolution [m]
-    x_bounds = [0.0, 1024.0]
+    x_bounds = [0.0, 1280.0]
     y_bounds_ensemble = [0.0, 256.0]
     
     # Re-centered virtual sensor position coordinates
-    sensor_pos = [600.0, 128.0] 
+    sensor_pos = [728.0, 128.0] 
     
     # Sequence of the 33 spanwise sensor coordinates evaluated
     sensor_y_coords = np.arange(0, 257, 8)
@@ -66,7 +66,7 @@ def main():
     # --- 4. Processing Loop & Coordinate Alignment ---
     print(f"[-] Step 2/4: Processing and re-centering {len(sensor_y_coords)} files...")
     for y_sensor in sensor_y_coords:
-        filename = f"footprint_600_{y_sensor}_20.csv"
+        filename = f"footprint_{str(int(sensor_pos[0]))}_{y_sensor}_20.csv"
         filepath = os.path.join(base_dir, filename)
         
         if not os.path.exists(filepath):

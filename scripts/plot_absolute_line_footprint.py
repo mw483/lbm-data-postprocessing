@@ -7,7 +7,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/cubes/height20"))
+repo_root = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))
 
 # Import your verified modular data loaders and processors
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
@@ -26,21 +26,21 @@ def main():
     print("=================================================================\n")
 
     # --- 1. Environmental & Directory Path Configurations ---
-    base_dir = "Y:/Particle_PostProcess_Outputs/20260612_particle_cube_3072/sensor_8x8x8/1200-1800_footprint"
+    base_dir = "Y:/Particle_PostProcess_Outputs/20260703_particle_flat_shortroughness/sensor_8x8x8/1200-1800_footprint"
     source_dir = "Y:/particle_position"
-    source_file = os.path.join(source_dir, "pos_cube_3072.txt")
+    source_file = os.path.join(source_dir, "particle_position.txt")
     
     # Targeted output file inside your specified figures hierarchy
     output_image = os.path.join(repo_root, "absolute_line_integrated_footprint.png")
     os.makedirs(os.path.dirname(output_image), exist_ok=True)
     
     # Simulation Spatial Bounds Configuration
-    domain_extent = [0.0, 1024.0, 0.0, 256.0]
-    sensor_x_line = 600.0  # Streamwise position of the sensor array
+    domain_extent = [0.0, 1280.0, 0.0, 256.0]
+    sensor_x = 728.0  # Streamwise position of the sensor array
     
     # Regular Grid Resolution Configuration for the Heatmap Canvas
     dx, dy = 2.0, 2.0  # [m]
-    x_bounds = [0.0, 1024.0]
+    x_bounds = [0.0, 1280.0]
     y_bounds_abs = [0.0, 256.0]
     
     # The explicit sequence of the 33 spanwise sensor files
@@ -60,7 +60,7 @@ def main():
     # --- 3. Absolute Data Accumulation Engine ---
     print(f"[-] Step 2/4: Accumulating raw counts across all {len(sensor_y_coords)} files...")
     for y_sensor in sensor_y_coords:
-        filename = f"footprint_600_{y_sensor}_20.csv"
+        filename = f"footprint_{str(int(sensor_x))}_{y_sensor}_20.csv"
         filepath = os.path.join(base_dir, filename)
         
         if not os.path.exists(filepath):
@@ -95,7 +95,7 @@ def main():
     plot_absolute_line_integrated_footprint(
         X=X, Y=Y,
         pdf_grid=pdf_grid_smoothed,
-        sensor_x=sensor_x_line,
+        sensor_x=sensor_x,
         save_path=output_image,
         domain_extent=domain_extent
     )
