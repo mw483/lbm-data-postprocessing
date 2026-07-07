@@ -42,6 +42,7 @@ def plot_absolute_footprint(x, y, counts, sensor_x, sensor_y, save_path, domain_
     plt.close(fig)
     print(f"Saved footprint figure to: {save_path}")
 
+
 def plot_footprint_overlay(X, Y, lbm_pdf, schmid_pdf, lbm_thresh, schmid_thresh, 
                            sensor_pos, title, save_path, x_bounds=[0, 1024], y_bounds=[0, 256]):
     """
@@ -78,6 +79,7 @@ def plot_footprint_overlay(X, Y, lbm_pdf, schmid_pdf, lbm_thresh, schmid_thresh,
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)
     plt.close()
+    
 
 def plot_model_comparison(X, Y, lbm_pdf, model_pdf, lbm_thresholds, model_thresholds, 
                           sensor_pos, title, model_title, save_path, x_bounds=[0, 1024], y_bounds=[0, 256]):
@@ -142,8 +144,9 @@ def plot_model_comparison(X, Y, lbm_pdf, model_pdf, lbm_thresholds, model_thresh
     plt.close(fig)
 
 
-def plot_lbm_comparison(X, Y, lbm1_pdf, lbm2_pdf, lbm1_thresholds, lbm2_thresholds,
-                          sensor_pos, title, case1_title, case2_title, save_path, x_bounds=[0, 1024], y_bounds=[0, 256]):
+def plot_lbm_comparison(X1, Y1, X2, Y2, lbm1_pdf, lbm2_pdf, lbm1_thresholds, lbm2_thresholds,
+                          sensor_pos1, sensor_pos2, title, case1_title, case2_title, save_path,
+                          x_bounds1=[0, 1024], y_bounds1=[0, 256], x_bounds2=[0, 1024], y_bounds2=[0, 256]):
     """
     Plots two LBM footprint cases side-by-side as normalized heatmaps.
     """
@@ -169,29 +172,30 @@ def plot_lbm_comparison(X, Y, lbm1_pdf, lbm2_pdf, lbm1_thresholds, lbm2_threshol
     # ==========================================
     # PANEL 1: LBM CASE 1 DATA
     # ==========================================
-    im1 = ax1.pcolormesh(X, Y, lbm1_norm, **mesh_kwargs)
-    ax1.contour(X, Y, lbm1_norm, levels=lbm1_thresh_norm, colors='white', 
+    im1 = ax1.pcolormesh(X1, Y1, lbm1_norm, **mesh_kwargs)
+    ax1.contour(X1, Y1, lbm1_norm, levels=lbm1_thresh_norm, colors='white', 
                 linewidths=1.5, linestyles=line_styles, alpha=0.9)
     
-    ax1.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax1.plot(sensor_pos1[0], sensor_pos1[1], 'w*', markersize=15, markeredgecolor='k')
     ax1.set_title(case1_title, fontsize=14)
     ax1.set_xlabel("Downwind Distance X [m]", fontsize=12)
     ax1.set_ylabel("Crosswind Distance Y [m]", fontsize=12)
-    ax1.set_xlim(x_bounds[0], x_bounds[1])
-    ax1.set_ylim(y_bounds[0], y_bounds[1])
+    ax1.set_xlim(x_bounds1[0], x_bounds1[1])
+    ax1.set_ylim(y_bounds1[0], y_bounds1[1])
     ax1.set_aspect('equal', adjustable='box')
 
     # ==========================================
     # PANEL 2: LBM CASE 2 DATA
     # ==========================================
-    im2 = ax2.pcolormesh(X, Y, lbm2_norm, **mesh_kwargs)
-    ax2.contour(X, Y, lbm2_norm, levels=lbm2_thresh_norm, colors='white', 
+    im2 = ax2.pcolormesh(X2, Y2, lbm2_norm, **mesh_kwargs)
+    ax2.contour(X2, Y2, lbm2_norm, levels=lbm2_thresh_norm, colors='white', 
                 linewidths=1.5, linestyles=line_styles, alpha=0.9)
     
-    ax2.plot(sensor_pos[0], sensor_pos[1], 'w*', markersize=15, markeredgecolor='k')
+    ax2.plot(sensor_pos2[0], sensor_pos2[1], 'w*', markersize=15, markeredgecolor='k')
     ax2.set_title(case2_title, fontsize=14)
     ax2.set_xlabel("Downwind Distance X [m]", fontsize=12)
-    ax2.set_xlim(x_bounds[0], x_bounds[1])
+    ax2.set_xlim(x_bounds2[0], x_bounds2[1])
+    ax1.set_ylim(y_bounds2[0], y_bounds2[1])
     ax2.set_aspect('equal', adjustable='box')
 
     # ==========================================
