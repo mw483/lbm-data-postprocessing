@@ -6,18 +6,24 @@ import matplotlib.pyplot as plt
 # Ensure Python can find the modular packages
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.lbm_parsers import XZMatrixParser
-from physics_core.turbulence import calc_sigma_v
+from physics_core.turbulence import calc_sigma_v, calc_u_star
 
 def main():
     # 1. Paths and Configuration
-    base_out = r"Y:\20260703_output_flat_shortroughness"
+    base_out = r"Y:\20260707_output_flat_shortroughness_4mvel"
     t_step = "00180000"  # The specific suffix for time step 1200
-    
-    um_csv = os.path.join(base_out, f"xz_yav_um{t_step}_0000.csv")
-    vm_csv = os.path.join(base_out, f"xz_yav_vm{t_step}_0000.csv")
-    vv_csv = os.path.join(base_out, f"xz_yav_vv{t_step}_0000.csv")
-    
-    output_dir = r"../figures/flat_domain/inflow_analysis"
+
+    rank_x = 0
+    rank_y = 0
+    rank_z = 0
+
+    um_csv = os.path.join(base_out, f"xz_yav_um{t_step}_000{rank_x}.csv")
+    vm_csv = os.path.join(base_out, f"xz_yav_vm{t_step}_000{rank_x}.csv")
+    vv_csv = os.path.join(base_out, f"xz_yav_vv{t_step}_000{rank_x}.csv")
+    wm_csv = os.path.join(base_out, f"xz_yav_wm{t_step}_000{rank_x}.csv")
+    uw_csv = os.path.join(base_out, f"xz_yav_uw{t_step}_000{rank_x}.csv")
+
+    output_dir = r"../figures/flat_domain/inflow_analysis/with_ustar"
     os.makedirs(output_dir, exist_ok=True)
 
     dx_lbm = 2.0
@@ -29,6 +35,8 @@ def main():
     um_mat = XZMatrixParser.parse_file(um_csv)
     vm_mat = XZMatrixParser.parse_file(vm_csv)
     vv_mat = XZMatrixParser.parse_file(vv_csv)
+    wm_mat = XZMatrixParser.parse_file(wm_csv)
+    uw_mat = XZMatrixParser.parse_file(uw_csv)
     
     if um_mat is None or vm_mat is None or vv_mat is None:
         print("[ERROR] Failed to load one or more XZ matrices. Check file paths.")
@@ -38,7 +46,7 @@ def main():
     z_heights = z_indices * dz_lbm
 
     # 2. Generate the Side-by-Side Plot
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(18, 6), sharey=True)
     fig.suptitle(f"Boundary Layer & Turbulence Development over Flat Fetch (T={t_step[2:6]})", fontsize=15, fontweight='bold')
 
     for x_loc, color in zip(x_targets, colors):
@@ -49,9 +57,12 @@ def main():
         u_profile = um_mat[:, x_idx]
         vm_profile = vm_mat[:, x_idx]
         vv_profile = vv_mat[:, x_idx]
+        wm_profile = wm_mat[:, x_idx]
+        uw_profile = uw_mat[:, x_idx]
         
         # Calculate true resolved lateral turbulence
         sig_v_profile = calc_sigma_v(vv_profile, vm_profile)
+        u_star_profile = calc_u_star(uw_profile, u_profile, wm_profile)
         
         # Plot Mean Streamwise Velocity (U)
         ax1.plot(u_profile, z_heights, color=color, linewidth=2.5, 
@@ -59,6 +70,10 @@ def main():
         
         # Plot Lateral Turbulence (Sigma_v)
         ax2.plot(sig_v_profile, z_heights, color=color, linewidth=2.5, 
+                 label=f'Fetch X = {x_loc}m')
+        
+        # Plot Friction Velocity (U_star)
+        ax3.plot(u_star_profile, z_heights, color=color, linewidth=2.5, 
                  label=f'Fetch X = {x_loc}m')
 
     # Formatting Panel 1 (Mean Wind)
@@ -69,19 +84,25 @@ def main():
     ax1.legend(loc='upper left')
     ax1.set_xlim(0, np.max(um_mat) * 1.1)
 
-    # Formatting Panel 2 (Turbulence)
+    # Formatting Panel 2 (Lateral Velocity Fluctuation)
     ax2.set_title(r"Resolved Lateral Turbulence ($\sigma_v$)", fontsize=13)
     ax2.set_xlabel(r"Velocity Fluctuation $\sigma_v$ [m/s]", fontsize=12)
     ax2.grid(True, linestyle=':', alpha=0.7)
     ax2.legend(loc='upper right')
-    
-    # Optional: Highlight the "target" Kljun turbulence (0.25 m/s)
+
+    # Formatting Panel 3 (Friction Velocity)
+    ax3.set_title(r"Friction Velocity ($u_*$)", fontsize=13)
+    ax3.set_xlabel(r"Friction Velocity $u_*$ [m/s]", fontsize=12)
+    ax3.grid(True, linestyle=':', alpha=0.7)
+    ax3.legend(loc='upper right')
+
+    # Optional: Highlight the "target" Kljun Lateral Velocity Fluctuation (0.25 m/s)
     ax2.axvline(x=0.25, color='k', linestyle='--', alpha=0.6, 
                 label=r'Kljun Required $\sigma_v$ (~0.25)')
     ax2.legend(loc='upper right')
 
     plt.tight_layout()
-    save_path = os.path.join(output_dir, f"shortroughness_inflow_turbulence_development_{t_step}.png")
+    save_path = os.path.join(output_dir, f"4mvel_shortroughness_flat_inflow_turbulence_development_{t_step}.png")
     plt.savefig(save_path, dpi=300)
     
     print(f"Success! Saved inflow development plot to: {save_path}")

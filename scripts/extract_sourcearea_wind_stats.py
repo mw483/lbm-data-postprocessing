@@ -9,9 +9,9 @@ from data_loaders.lbm_parsers import XZMatrixParser
 
 def main():
     # 1. Paths
-    base_dir = r"Z:\20260527_output_flat_3072"
+    base_dir = r"Y:\20260707_output_flat_shortroughness_4mvel"
     xz_yav_file = os.path.join(base_dir, "xz_yav_um00180000_0000.csv")
-    output_json = r"../physics_core/metrics/schmid_params.json"
+    output_json = r"../physics_core/metrics/flat_shortroughness_4mvel_params.json"
     
     # 2. Domain Parameters
     grid_res = 2.0  # 1 grid = 2 meters
