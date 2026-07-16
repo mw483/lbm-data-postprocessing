@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import os
+import glob
+import re
 
 class XYStackedParser:
     """
@@ -54,6 +56,27 @@ class XYStackedParser:
             current_line += 1
             
         return data_dict
+    
+
+class XYDensityParser:
+    """
+    Parses a single 2D matrix (XY plane) from LBM Particle Density
+    """
+    def __init__(self):
+        self.nx = None
+        self.ny = None
+
+    def parse_file(self, file_path):
+        if not os.path.exists(file_path):
+            print(f"[ERROR] File not found: {file_path}")
+            return None
+
+        matrix = np.loadtxt(file_path, delimiter=',')
+
+        if self.ny is None or self.nx is None:
+            self.ny, self.nx = matrix.shape
+        
+        return matrix
 
 
 class XZMatrixParser:
@@ -83,3 +106,41 @@ class XZMatrixParser:
         except Exception as e:
             print(f"[ERROR] Failed to parse XZ matrix {file_path}: {e}")
             return None
+        
+def extract_z_height(filepath):
+        match = re.search(r"density_(\d+)m\.csv", filepath)
+        return int(match.group(1)) if match else 0
+
+
+def build_3d_density_volume(directory_path):
+    # Initialize your new parser
+    parser = XYDensityParser()
+    
+    # 1. Glob all the density files in the folder
+    search_pattern = os.path.join(directory_path, "xy_number_density_*m.csv")
+    files = glob.glob(search_pattern)
+    
+    if not files:
+        print("[ERROR] No density files found in directory.")
+        return None
+
+    # 2. Define the sorting logic (extracting the Z-height from the filename)
+    # Sort files physically from bottom to top (e.g., 2m, 4m, 6m...)
+    sorted_files = sorted(files, key=extract_z_height)
+    
+    # 3. Parse and collect the 2D arrays
+    layers = []
+    for f in sorted_files:
+        matrix = parser.parse_file(f)
+        if matrix is not None:
+            layers.append(matrix)
+            
+    # 4. Stack them into a 3D volume
+    # np.stack creates a shape of (ny, nx, nz)
+    volume_3d = np.stack(layers, axis=2)
+    
+    # Transpose to (nx, ny, nz) to match PyVista and standard Cartesian coordinates
+    volume_3d = np.transpose(volume_3d, (1, 0, 2))
+    
+    print(f"Successfully built 3D volume with shape: {volume_3d.shape}")
+    return volume_3d
