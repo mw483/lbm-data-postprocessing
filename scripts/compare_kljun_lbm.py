@@ -23,9 +23,9 @@ def main():
     sensor_size_z = 8
 
     # base_dir = rf"Y:\Particle_PostProcess_Outputs\20260707_particle_flat_shortroughness_4mvel\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
-    base_dir = rf"Y:\Particle_PostProcess_Outputs\20260707_particle_flat_shortroughness_4mvel\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
-    pos_file = r"Y:\particle_position\particle_position.txt"
-    params_path = r"../physics_core/metrics/flat_shortroughness_4mvel_params.json"
+    base_dir = rf"Y:\Particle_PostProcess_Outputs\20260612_particle_cube_3072\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
+    pos_file = r"Y:\particle_position\pos_cube_3072.txt"
+    params_path = r"../physics_core/metrics/cube_params.json"
     # lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
 
     # NEW: XZ Matrix Paths
@@ -45,12 +45,12 @@ def main():
     uw_csv = os.path.join(base_out, f"xz_yav_uw00180000_000{rank_x}.csv")
     vv_csv = os.path.join(base_out, f"xz_yav_vv00180000_000{rank_x}.csv")
 
-    output_dir = rf"../figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/20260707_output_flat_shortroughness_4mvel"
+    output_dir = rf"../figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/20260612_output_cube_3072"
     os.makedirs(output_dir, exist_ok=True)
     
-    x_bounds = [128.0, 1152.0]
+    x_bounds = [0.0, 1024.0]
     y_bounds = [0, 256]
-    sensor_x = 728.0
+    sensor_x = 600.0
     sensor_y = 128.0
     contour_levels = [0.8, 0.6, 0.4, 0.2]
 
@@ -151,13 +151,13 @@ def main():
         # ==========================================
         # STEP C: PLOT COMPARISON
         # ==========================================
-        save_path = os.path.join(output_dir, f"side_by_side_lbm_shortroughness_4mvel_kljun_z{sz}.png")
+        save_path = os.path.join(output_dir, f"side_by_side_lbm_cube_kljun_z{sz}.png")
         plot_model_comparison(
             X=X_fine, Y=Y_fine, 
             lbm_pdf=lbm_pdf_fine, model_pdf=kljun_pdf_fine, 
             lbm_thresholds=lbm_thresholds, model_thresholds=kljun_thresholds,
             sensor_pos=(adjusted_sensor_x, adjusted_sensor_y), 
-            title=f"Footprint Comparison: LBM (16m high 128m long approach, u0 = 4.0 m/s) vs Kljun FFP (Zm = {sz}m), {sensor_size_x}x{sensor_size_y}x{sensor_size_z} Sensor",
+            title=f"Footprint Comparison: LBM (cube) vs Kljun FFP (Zm = {sz}m), {sensor_size_x}x{sensor_size_y}x{sensor_size_z} Sensor",
             model_title="Kljun et al. (2015) FFP",
             save_path=save_path, x_bounds=x_bounds, y_bounds=y_bounds
         )

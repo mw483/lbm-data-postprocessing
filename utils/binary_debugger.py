@@ -82,5 +82,5 @@ def inspect_binaries(base_dir, time_step=int):
 
 if __name__ == "__main__":
     # Update this path to where your .bin files are stored
-    bin_dir = r"Z:\20260527_particle_flat_3072"
-    inspect_binaries(bin_dir, time_step=1800)
+    bin_dir = r"Y:\20260527_particle_flat_3072"
+    inspect_binaries(bin_dir, time_step=1200)

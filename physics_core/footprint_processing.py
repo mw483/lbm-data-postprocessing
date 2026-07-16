@@ -194,6 +194,7 @@ def extract_shape_parameters(Y, pdf_grid, threshold, dx, dy):
         
     return area_m2, half_width_m
 
+
 def refine_footprint_grid(X_low, Y_low, pdf_low, x_bounds, y_bounds, target_res=1.0):
     """
     Fits a 2D cubic bivariate spline over a low-resolution grid and evaluates it
