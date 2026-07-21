@@ -150,10 +150,20 @@ def plot_3d_dvr(map_filepath, save_path, density_dir, min_visible_density, max_v
         spacing=(dx, dx, dz), 
         origin=(0.0, 0.0, 0.0)
     )
-    density_grid.cell_data["Density"] = volume_3d.flatten(order="F")
+
+    cloud_opacity = [0.0, 0.1, 0.3, 0.6, 0.9]
+
+    log_volume = np.log10(volume_3d + 1)
     
-    # DELETE OR COMMENT OUT THIS LINE:
-    # density_grid = density_grid.cell_data_to_point_data() 
+    # Assign the LOGGED data to the PyVista grid instead of the raw data
+    density_grid.cell_data["Log_Density"] = log_volume.flatten(order="F")
+
+    # ==========================================
+    # 3. Update the Transfer Function for Log Values
+    # ==========================================
+    # Now our thresholds must be in log space!
+    log_min = np.log10(min_visible_density + 1)
+    log_max = np.log10(400000 + 1) # Or use np.max(log_volume)
 
     # ==========================================
     # 4. Render the Scene (Fail-Safe Mode)
@@ -172,16 +182,13 @@ def plot_3d_dvr(map_filepath, save_path, density_dir, min_visible_density, max_v
     # Fail-Safe Volume Rendering
     plotter.add_volume(
         density_grid,
-        scalars="Density",
+        scalars="Log_Density",       # Point to the newly logged data
         cmap="plasma", 
-        # 1. Use 'linear' first. It guarantees data > 0 will have some visibility.
-        opacity="linear", 
-        # 2. Let PyVista automatically calculate the clim based on your actual data
-        # clim=[minimum_visible_density, maximum_visible_density], 
-        # 3. Use 'fixed_point' or 'gpu' if 'smart' is failing on your remote node
-        mapper="fixed_point", 
+        opacity=cloud_opacity, 
+        clim=[log_min, log_max],     # Use log limits
+        mapper="smart",
         show_scalar_bar=True,
-        scalar_bar_args={"title": "Particle Density Cloud"},
+        scalar_bar_args={"title": "Log10(Particle Density)"},
         name="Plume"
     )
 

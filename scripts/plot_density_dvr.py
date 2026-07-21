@@ -16,11 +16,11 @@ def main():
     # 1. Define File Paths
     # ==========================================
     # Adjust these to match your actual lab server or TSUBAME layout
-    map_file = os.path.join("Y:", "map", "map_02_full_roughness.dat")
-    density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260612_particle_cube_3072", f"{start_step}-{end_step}_density")
+    map_file = os.path.join("Y:", "map", "map_01_flat_plane.dat")
+    density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260527_particle_flat_3072", f"{start_step}-{end_step}_density")
     
     output_path = os.path.join(
-        "../figures", "density", "3d_dvr", "20260612_particle_cube_3072",
+        "../figures", "density", "3d_dvr", "20260527_particle_flat_3072",
         f"density_3d_dvr_{start_step}-{end_step}.png"
     )
     # ==========================================
@@ -31,7 +31,6 @@ def main():
     
     # Define the exact density thresholds you want to wrap in 3D shells.
     # Start with a wide range, then narrow it down based on what you see.
-    target_isopleths = [0, 100, 500, 2000]
 
     min_visible_density, max_visible_density = 50, 2000
 
