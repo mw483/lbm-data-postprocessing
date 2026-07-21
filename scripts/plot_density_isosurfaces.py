@@ -8,8 +8,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import the plotting function from the core module
 from plotting_core.density_plots import plot_3d_isopleths
 
-output_dir = Path(f"../figures/density/3d_isosurfaces")
-output_dir.mkdir(parents=True, exist_ok=True)
+start_step = 1200
+end_step = 1800
 
 def main():
     # ==========================================
@@ -17,8 +17,12 @@ def main():
     # ==========================================
     # Adjust these to match your actual lab server or TSUBAME layout
     map_file = os.path.join("Y:", "map", "map_01_flat_plane.dat")
-    density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260527_particle_flat_3072", "1200-1800_density")
+    density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260527_particle_flat_3072", f"{start_step}-{end_step}_density")
     
+    output_path = os.path.join(
+        "./figures", "density", "3d_isosurfaces", "20260527_particle_flat_3072",
+        f"density_3d_isosurface_{start_step}-{end_step}.png"
+    )
     # ==========================================
     # 2. Define Physics and Scaling Parameters
     # ==========================================
@@ -35,6 +39,7 @@ def main():
     print("--- Starting 3D Isosurface Visualization ---")
     plot_3d_isopleths(
         map_filepath=map_file,
+        save_path=output_path,
         density_dir=density_directory,
         isopleth_values=target_isopleths,
         dx=grid_dx,

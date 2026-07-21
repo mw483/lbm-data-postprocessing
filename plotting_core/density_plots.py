@@ -8,7 +8,7 @@ from data_loaders.map_io import load_lbm_map, create_voxel_buildings
 from data_loaders.lbm_parsers import build_3d_density_volume
 
 
-def plot_3d_isopleths(map_filepath, density_dir, isopleth_values, dx=2.0, dz=2.0):
+def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=2.0, dz=2.0):
     """
     Renders a 3D interactive PyVista plot overlaying voxel buildings with
     continuous 3D density isosurfaces.
@@ -84,6 +84,27 @@ def plot_3d_isopleths(map_filepath, density_dir, isopleth_values, dx=2.0, dz=2.0
     # Aesthetic environment settings
     plotter.set_background('white')
     plotter.add_axes()
-    plotter.show_grid(color='black')
     
+    # 5. Configure Camera and Lighting
+    plotter.camera_position = 'iso'
+    plotter.show_grid(
+        font_size=10, 
+        fmt="%.0f", 
+        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
+    )
+    
+    # 6. Save output logic
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    snap_counter = [1] 
+
+    def take_snap():
+        base_name, ext = os.path.splitext(save_path)
+        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
+        plotter.screenshot(unique_save_path)
+        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
+        snap_counter[0] += 1
+
+    plotter.add_key_event('s', take_snap)
+
+    print("Interactive window opened.")
     plotter.show()
