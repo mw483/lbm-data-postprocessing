@@ -1,6 +1,7 @@
 import sys
 import os
 import pyvista as pv
+import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -92,7 +93,110 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
         fmt="%.0f", 
         xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
     )
+
+    # 6. Save output logic
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    snap_counter = [1] 
+
+    def take_snap():
+        base_name, ext = os.path.splitext(save_path)
+        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
+        plotter.screenshot(unique_save_path)
+        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
+        snap_counter[0] += 1
+
+    plotter.add_key_event('s', take_snap)
+
+    print("Interactive window opened.")
+    plotter.show()
+
+
+
+def plot_3d_dvr(map_filepath, save_path, density_dir, min_visible_density, max_visible_density, dx=2.0, dz=2.0):
+    """
+    Renders a 3D interactive PyVista plot overlaying voxel buildings with
+    continuous 3D Direct Volume Renders
+    """
+    # ==========================================
+    # 1. Load the Physical Building Map
+    # ==========================================
+    print(f"Loading building geometry from: {map_filepath}...")
+    try:
+        elevation_matrix, nx_map, ny_map = load_lbm_map(map_filepath)
+        buildings = create_voxel_buildings(elevation_matrix, nx_map, ny_map, resolution=dx)
+    except Exception as e:
+        print(f"[ERROR] Failed to load map: {e}")
+        return
+
+    # ==========================================
+    # 2. Load the 3D Density Volume
+    # ==========================================
+    print(f"Aggregating density layers from: {density_dir}...")
+    volume_3d = build_3d_density_volume(density_dir)
     
+    if volume_3d is None:
+        print("[ERROR] Missing data. Aborting plot.")
+        return
+
+    # --- DEBUG PRINT ---
+    # This will tell you exactly what your clim should actually be!
+    max_val = np.max(volume_3d)
+    print(f"[DEBUG] Maximum density value in this dataset: {max_val}")
+
+    nx, ny, nz = volume_3d.shape
+    
+    density_grid = pv.ImageData(
+        dimensions=(nx + 1, ny + 1, nz + 1),
+        spacing=(dx, dx, dz), 
+        origin=(0.0, 0.0, 0.0)
+    )
+    density_grid.cell_data["Density"] = volume_3d.flatten(order="F")
+    
+    # DELETE OR COMMENT OUT THIS LINE:
+    # density_grid = density_grid.cell_data_to_point_data() 
+
+    # ==========================================
+    # 4. Render the Scene (Fail-Safe Mode)
+    # ==========================================
+    print("Initializing PyVista rendering environment...")
+    plotter = pv.Plotter()
+
+    if buildings is not None:
+        plotter.add_mesh(
+            buildings, 
+            color='lightgrey', 
+            pbr=True, metallic=0.2, roughness=0.8, 
+            name="Buildings"
+        )
+
+    # Fail-Safe Volume Rendering
+    plotter.add_volume(
+        density_grid,
+        scalars="Density",
+        cmap="plasma", 
+        # 1. Use 'linear' first. It guarantees data > 0 will have some visibility.
+        opacity="linear", 
+        # 2. Let PyVista automatically calculate the clim based on your actual data
+        # clim=[minimum_visible_density, maximum_visible_density], 
+        # 3. Use 'fixed_point' or 'gpu' if 'smart' is failing on your remote node
+        mapper="fixed_point", 
+        show_scalar_bar=True,
+        scalar_bar_args={"title": "Particle Density Cloud"},
+        name="Plume"
+    )
+
+    # Aesthetic environment settings
+    plotter.set_background('white')
+    plotter.add_axes()
+    
+    # 5. Configure Camera and Lighting
+    plotter.camera_position = 'iso'
+    plotter.show_grid(
+        font_size=10, 
+        fmt="%.0f", 
+        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
+    )
+
     # 6. Save output logic
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     snap_counter = [1] 
