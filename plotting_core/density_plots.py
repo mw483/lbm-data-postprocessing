@@ -35,6 +35,11 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
         print("[ERROR] Missing data. Aborting plot.")
         return
 
+    # --- DEBUG PRINT ---
+    # This will tell you exactly what your clim should actually be!
+    max_val = np.max(volume_3d)
+    print(f"[DEBUG] Maximum density value in this dataset: {max_val}")
+
     # Extract dynamic shapes (nx, ny, nz)
     nx, ny, nz = volume_3d.shape
     
@@ -76,7 +81,7 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
     plotter.add_mesh(
         contours, 
         cmap="plasma",           
-        opacity=0.6,             # Semi-transparent to show inner cores
+        opacity=0.5,             # Semi-transparent to show inner cores
         show_scalar_bar=True,
         scalar_bar_args={"title": "Particle Density"},
         name="Plume"
