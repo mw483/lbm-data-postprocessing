@@ -8,8 +8,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 # Import the plotting function from the core module
 from plotting_core.density_plots import plot_3d_dvr
 
-start_step = 1600
-end_step = 1699
+start_step = 1200
+end_step = 1800
 
 def main():
     # ==========================================
@@ -33,7 +33,7 @@ def main():
     # Define the exact density thresholds you want to wrap in 3D shells.
     # Start with a wide range, then narrow it down based on what you see.
 
-    min_visible_density, max_visible_density = 50, 2000
+    min_visible_density, max_visible_density = 50, 400000
 
     # ==========================================
     # 3. Execute

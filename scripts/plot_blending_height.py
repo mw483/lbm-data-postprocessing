@@ -19,9 +19,9 @@ nx, ny = 512, 128
 
 sensor_x = 600.0
 sensor_y = 128.0
-sensor_z = 90.0
+sensor_z = 20.0
 
-target_blending_height = 40.0
+target_blending_height = 10.0
 delta_z = sensor_z - target_blending_height  # Vertical separation distance
 
 output_dir = Path(f"../figures/blending_height/target_blending_{int(target_blending_height)}")

@@ -32,7 +32,7 @@ def main():
     
     # Define the exact density thresholds you want to wrap in 3D shells.
     # Start with a wide range, then narrow it down based on what you see.
-    target_isopleths = [0, 100, 500, 2000, 10000]
+    target_isopleths = [50, 100, 500, 2000, 400000]
 
     # ==========================================
     # 3. Execute

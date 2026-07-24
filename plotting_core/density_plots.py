@@ -49,18 +49,24 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
         spacing=(dx, dx, dz), 
         origin=(0.0, 0.0, 0.0)
     )
-    
-    # Assign the 3D matrix to the cells (flattened in Fortran order)
-    density_grid.cell_data["Density"] = volume_3d.flatten(order="F")
-    
-    # Convert cell data to point data (REQUIRED for smooth isosurface contouring)
-    density_grid = density_grid.cell_data_to_point_data()
 
     # ==========================================
     # 3. Generate the Isopleths (Contours)
     # ==========================================
-    print(f"Calculating 3D isopleths for values: {isopleth_values}...")
-    contours = density_grid.contour(isosurfaces=isopleth_values, scalars="Density")
+    # Log-transform the data (add 1 to avoid log(0) errors)
+    log_volume = np.log10(volume_3d + 1)
+
+    density_grid.cell_data["Log_Density"] = log_volume.flatten(order="F")
+    density_grid = density_grid.cell_data_to_point_data()
+
+    # Define your original target values
+    target_particles = np.array(isopleth_values)
+    
+    # Convert those target values into Log space for the contour filter
+    log_isopleths = np.log10(target_particles + 1).tolist()
+
+    # Generate contours using the Log data and Log thresholds
+    contours = density_grid.contour(isosurfaces=log_isopleths, scalars="Log_Density")
 
     # ==========================================
     # 4. Render the Scene
@@ -83,7 +89,7 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
         cmap="plasma",           
         opacity=0.5,             # Semi-transparent to show inner cores
         show_scalar_bar=True,
-        scalar_bar_args={"title": "Particle Density"},
+        scalar_bar_args={"title": "Particle Density (Log Scale)"},
         name="Plume"
     )
 
