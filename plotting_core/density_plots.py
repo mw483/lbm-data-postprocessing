@@ -9,7 +9,7 @@ from data_loaders.map_io import load_lbm_map, create_voxel_buildings
 from data_loaders.lbm_parsers import build_3d_density_volume
 
 
-def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=2.0, dz=2.0):
+def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, sensor_center=None, sensor_size=None, dx=2.0, dz=2.0):
     """
     Renders a 3D interactive PyVista plot overlaying voxel buildings with
     continuous 3D density isosurfaces.
@@ -72,6 +72,19 @@ def plot_3d_isopleths(map_filepath, save_path, density_dir, isopleth_values, dx=
     # 4. Render the Scene
     # ==========================================
     print("Initializing PyVista rendering environment...")
+
+    if 
+        # Define the Sensor Box bounds (Already in meters!)
+        cx, cy, cz = sensor_center 
+        sx, sy, sz = sensor_size
+
+        bounds = [
+            cx - sx/2, cx + sx/2,  # X min, X max
+            cy - sy/2, cy + sy/2,  # Y min, Y max
+            cz - sz/2, cz + sz/2   # Z min, Z max
+        ]
+        sensor_box = pv.Box(bounds=bounds)
+
     plotter = pv.Plotter()
 
     # Add the buildings

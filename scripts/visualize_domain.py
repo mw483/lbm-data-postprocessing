@@ -10,17 +10,17 @@ from plotting_core.map_plots import plot_birdseye_domain
 
 def main():
     # 1. Paths
-    flat_map_path = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\map\map_flat_16m_shortroughness.dat"
+    flat_map_path = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\map\map_cube_16m_approach.dat"
     # cube_map_path = r"Z:\map\map_02_full_roughness.dat"
     
-    flat_pos_path = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\particle_position\pos_flat_3072_shortroughness.txt"
+    flat_pos_path = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\particle_position\pos_tsubame_flat.txt"
     # cube_pos_path = r"Z:\particle_position\pos_cube_3072.txt"
     
     output_dir = r"../figures/map_visualizations"
     
     # Sensor Coordinates & Grid Resolution
-    sensor_x = 728.0
-    sensor_y = 128.0
+    sensor_x = 3672.0
+    sensor_y = 256.0
     dx = 2.0
     dy = 2.0
 
@@ -36,7 +36,7 @@ def main():
         source_map=flat_sources, 
         sensor_pos=(sensor_x, sensor_y), 
         title="Bird's-Eye View: Flat Domain Source Distribution", 
-        save_path=os.path.join(output_dir, "domain_flat_plane_shortroughness.png"),
+        save_path=os.path.join(output_dir, "domain_cube_tsubame.png"),
         dx=dx, dy=dy
     )
 

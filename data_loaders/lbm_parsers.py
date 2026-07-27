@@ -106,6 +106,7 @@ class XZMatrixParser:
         except Exception as e:
             print(f"[ERROR] Failed to parse XZ matrix {file_path}: {e}")
             return None
+
         
 def extract_z_height(filepath):
         match = re.search(r"density_(\d+)m\.csv", filepath)
