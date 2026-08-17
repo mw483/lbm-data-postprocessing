@@ -36,3 +36,49 @@ def load_source_trajectories(bin_dir, target_source_id, start_step, end_step):
             
     return trajectories
 
+
+def load_exact_particle_trajectories(bin_dir, target_particle_ids, start_step, end_step):
+    """
+    Reads LBM binary files over time and tracks ONLY specific Particle IDs.
+    Returns a dict: {particle_id: [[x1, y1, z1], [x2, y2, z2], ...]}
+    """
+    trajectories = {p_id: [] for p_id in target_particle_ids}
+    
+    # Convert to a NumPy array for ultra-fast masking
+    target_array = np.array(list(target_particle_ids), dtype=np.int32)
+    
+    for step in range(start_step, end_step + 1):
+        idx_path = os.path.join(bin_dir, f"index0-{step}.bin")
+        pos_path = os.path.join(bin_dir, f"position0-{step}.bin")
+        
+        if not os.path.exists(idx_path) or not os.path.exists(pos_path):
+            continue
+            
+        # Load and strip the 1-element byte-header
+        indices = np.fromfile(idx_path, dtype=np.int32)[1:]
+        positions = np.fromfile(pos_path, dtype=np.float32)[1:].reshape(-1, 3)
+        
+        # Fast NumPy filtering: Only keep rows where the index is in our Hit List
+        mask = np.isin(indices, target_array)
+        
+        valid_ids = indices[mask]
+        valid_pos = positions[mask]
+        
+        # Append coordinates to the trajectory history
+        for p_id, pos in zip(valid_ids, valid_pos):
+            trajectories[p_id].append(pos)
+            
+    return trajectories
+
+
+def extract_hit_list_from_time_capsule(filepath, target_sensor_id):
+    """
+    Parses the C++ sensor_hit_ids.txt file to extract the successful Particle IDs.
+    """
+    hit_list = set()
+    with open(filepath, 'r') as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) == 6 and int(parts[0]) == target_sensor_id:
+                hit_list.add(int(parts[5])) # The 6th column is the Particle ID
+    return hit_list
