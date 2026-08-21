@@ -19,20 +19,17 @@ def main():
     
     # IMPORTANT: Set this to your actual LBM grid resolution (usually 2.0m)
     dx = 2.0 
-
-    # Max rank: Binary data is divided based on the rank
-    max_ranks = 4
     
     # Time step range
     start_step = 1200
     end_step = 1800  
     
     # Sensor Parameters - PASSED IN PHYSICAL METERS
-    sensor_center = (3672, 256, 90) 
+    sensor_center = (3672, 64, 90) 
     sensor_size = (8, 8, 8) 
     
     # 3. Target Sensor ID (Assuming 0 is the index of the first sensor in your C++ list)
-    target_sensor_id = 4 
+    target_sensor_id = 1 
     
     # Dynamic output path generation
     sensor_folder = f"sensor_{sensor_size[0]}x{sensor_size[1]}x{sensor_size[2]}"
@@ -56,7 +53,7 @@ def main():
         
     print(f"Found {len(target_particle_ids)} unique successful particles. Loading binary trajectories from steps {start_step} to {end_step}...")
     print(f"Generating True Pathways for Sensor {target_sensor_id}...")
-    
+
     # 6. Pass the specific target list to the binary reader
     trajectories = load_streamed_trajectories(trajectory_csv, time_capsule_file, target_sensor_id)
     
