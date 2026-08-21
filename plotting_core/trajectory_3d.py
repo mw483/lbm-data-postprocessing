@@ -50,9 +50,9 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     plotter = pv.Plotter(off_screen=False)
     
     # Add Trajectories and Sensor
-    plotter.add_mesh(poly, color="cyan", line_width=0.5, opacity=0.5, label="Particle Trajectories")
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.3, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", opacity=0.3, style="wireframe", line_width=2)
+    plotter.add_mesh(poly, color="cyan", line_width=0.4, opacity=0.4, label="Particle Trajectories")
+    plotter.add_mesh(sensor_box, color="magenta", opacity=0.5, style="surface", label="Sensor Volume")
+    plotter.add_mesh(sensor_box, color="red", opacity=0.5, style="wireframe", line_width=2)
 
     # 4. Load and Add the Map (NO TILING)
     if map_filepath and os.path.exists(map_filepath):
