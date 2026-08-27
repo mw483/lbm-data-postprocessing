@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # 1. Update imports to use the new exact ID tracking logic
 from data_loaders.particle_io import load_streamed_trajectories, extract_hit_list_from_time_capsule
-from plotting_core.trajectory_3d import plot_trajectories_with_sensor
+from plotting_core.particle_3d_plots import plot_trajectories_with_sensor
 
 def main():
     # --- Configuration ---
