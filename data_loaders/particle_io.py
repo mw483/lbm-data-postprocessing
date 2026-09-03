@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import polars as pl
+from pathlib import Path
+from typing import Set, Union
 
 def load_source_trajectories(bin_dir, target_source_id, start_step, end_step):
     """
@@ -86,7 +88,7 @@ def load_exact_particle_trajectories(bin_dir, target_particle_ids, start_step, e
     return trajectories
 
 
-def extract_hit_list_from_time_capsule(filepath, target_sensor_id):
+def extract_hit_list_from_time_capsule(filepath, target_sensor_id=None, target_coords=None):
     """
     Parses the C++ sensor_hit_ids.txt file to extract the successful Particle IDs.
     """
@@ -94,8 +96,49 @@ def extract_hit_list_from_time_capsule(filepath, target_sensor_id):
     with open(filepath, 'r') as f:
         for line in f:
             parts = line.split()
-            if len(parts) == 6 and int(parts[0]) == target_sensor_id:
-                hit_list.add(int(parts[5])) # The 6th column is the Particle ID
+            # Ensure the line has the expected 6 columns: [Sensor_ID, X, Y, Z, Source_ID, Particle_ID]
+            if len(parts) == 6:
+                s_id = int(parts[0])
+                s_x, s_y, s_z = float(parts[1]), float(parts[2]), float(parts[3])
+                p_id = int(parts[5])
+
+                match = False
+
+                if target_sensor_id is not None and s_id == target_sensor_id:
+                    match = True
+                elif target_coords is not None:
+                    tx, ty, tz = target_coords
+                    # Use a small tolerance for floating-point coordinate matching
+                    if abs(s_x - tx) < 0.1 and abs(s_y - ty) < 0.1 and abs(s_z - tz) < 0.1:
+                        match = True
+
+                if match:
+                    hit_list.add(p_id) # The 6th column is the Particle ID
+    return hit_list
+
+
+def extract_hit_list_by_plane(
+    filepath: Union[str, Path],
+    target_x: float,
+    target_z: float,
+    tol: float = 0.5
+) -> Set[int]:
+    """
+    Extracts Particle IDs intercepted across all Y sensors at (target_x, target_z).
+    sensor_hit_ids.txt format: [sensor_id, x, y, z, source_id, particle_id]
+    """
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"[ERROR] Time capsule not found: {filepath}")
+
+    hit_list = set()
+    with open(filepath, "r") as f:
+        for line in f:
+            parts = line.split()
+            if len(parts) >= 6:
+                sx, sz = float(parts[1]), float(parts[3])
+                if abs(sx - target_x) <= tol and abs(sz - target_z) <= tol:
+                    hit_list.add(int(parts[5]))
     return hit_list
 
 

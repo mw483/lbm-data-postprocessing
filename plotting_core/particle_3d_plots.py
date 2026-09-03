@@ -7,6 +7,8 @@ from scipy.ndimage import gaussian_filter
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.map_io import create_voxel_buildings, load_lbm_map
 
+pv.global_theme.allow_empty_mesh = True # Allow empty mesh (for flat plane maps)
+
 def calculate_3d_cumulative_thresholds(volume_3d, voxel_volume, levels=[0.50, 0.80, 0.95]):
     """
     Computes exact scalar isopleth thresholds corresponding to cumulative
@@ -125,7 +127,7 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     plotter.show()
 
 
-def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf"):
+def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", crop_approach=True, x_start=3072.0):
 
     """
     Bins continuous Lagrangian trajectory coordinates into a 3D volume
@@ -190,14 +192,23 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
     min_thresh = float(np.percentile(active_cells, 5.0))
     clamped_volume = np.clip(volume_3d, a_min=0.0, a_max=p99_max)
 
+    # Crop the 3D volume array along the X-axis in NumPy space
+    if crop_approach:
+        x_idx_start = int(np.floor(x_start / voxel_res))
+        cropped_volume = clamped_volume[x_idx_start:, :, :]
+        grid_origin_x = x_idx_start * voxel_res
+    else:
+        cropped_volume = volume_3d
+        grid_origin_x = 0.0
+
     # --- 5. Build PyVista Uniform ImageData Grid ---
-    nx_cells, ny_cells, nz_cells = volume_3d.shape
+    nx_cells, ny_cells, nz_cells = cropped_volume.shape
     density_grid = pv.ImageData(
         dimensions=(nx_cells + 1, ny_cells + 1, nz_cells + 1),
         spacing=(voxel_res, voxel_res, voxel_res),
-        origin=(0.0, 0.0, 0.0)
+        origin=(grid_origin_x, 0.0, 0.0)
     )
-    density_grid.cell_data["Density"] = clamped_volume.flatten(order="F")
+    density_grid.cell_data["Density"] = cropped_volume.flatten(order="F")
 
     # --- 6. Assemble Scene ---
     plotter = pv.Plotter(off_screen=False)
@@ -206,6 +217,8 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
     if elevation_mat is not None:
         building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
         if building_mesh:
+            if crop_approach:
+                building_mesh=building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
             plotter.add_mesh(
                 building_mesh,
                 color="lightgray",
@@ -215,17 +228,29 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
                 label="Buildings"
             )
 
-        ground = pv.Plane(
-            center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
-            direction=(0, 0, 1),
-            i_size=x_domain_max,
-            j_size=y_domain_max
-        )
+        if crop_approach:
+            x_len = x_domain_max - x_start
+            ground = pv.Plane(
+                center=(x_start + x_len / 2.0, y_domain_max / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_len,
+                j_size=y_domain_max
+            )
+
+        else:
+            ground = pv.Plane(
+                center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_domain_max,
+                j_size=y_domain_max
+            )
         plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
 
     # B. Add Direct Volume Rendering (DVR)
     # Piecewise opacity: completely transparent at 0, ramps up in dense cores
     cloud_opacity = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+    
     plotter.add_volume(
         density_grid, 
         scalars="Density", 
@@ -372,7 +397,7 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     plotter.show()
 
 
-def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", cumulative_levels=[0.50, 0.80, 0.95], manual_thresholds=None,  shell_opacity=0.45):
+def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", cumulative_levels=[0.50, 0.80, 0.95], manual_thresholds=None,  shell_opacity=0.45, crop_approach=True, x_start=3072.0):
     """
     Bins Lagrangian trajectories into an 8x8x8m 3D grid and extracts nested 
     continuous 3D isopleth shells (enclosed probability/mass envelopes).
@@ -462,6 +487,8 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
     if elevation_mat is not None:
         building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
         if building_mesh:
+            if crop_approach:
+                building_mesh=building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
             plotter.add_mesh(
                 building_mesh,
                 color="lightgray",
@@ -471,15 +498,28 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
                 label="Buildings"
             )
 
-        ground = pv.Plane(
-            center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
-            direction=(0, 0, 1),
-            i_size=x_domain_max,
-            j_size=y_domain_max
-        )
+        if crop_approach:
+            x_len = x_domain_max - x_start
+            ground = pv.Plane(
+                center=(x_start + x_len / 2.0, y_domain_max / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_len,
+                j_size=y_domain_max
+            )
+
+        else:
+            ground = pv.Plane(
+                center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_domain_max,
+                j_size=y_domain_max
+            )
         plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
 
     # B. Add 3D Isosurface shells
+    if crop_approach and contours.n_points > 0:
+        contours = contours.clip(normal='x', origin=(x_start, 0, 0), invert=False)
+
     plotter.add_mesh(
         contours,
         scalars="Density",
