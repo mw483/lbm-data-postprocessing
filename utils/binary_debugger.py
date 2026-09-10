@@ -36,7 +36,7 @@ def inspect_binaries(base_dir, time_step=int):
             print("WARNING: Float count does not equal 3x Index count -3. Might be float64 or planar.")
 
     # 3. Inspect SGS Velocities (Try float32 first)
-    if os.path.exists(pos_file):
+    if os.path.exists(sgs_file):
         sgs_velocities = np.fromfile(sgs_file, dtype=np.float32)[1:]
         print(f"\n[SGS Velocity File]: Found {len(sgs_velocities)} floats (assuming float32).")
         
@@ -50,7 +50,7 @@ def inspect_binaries(base_dir, time_step=int):
             print("WARNING: Float count does not equal 3x Index count - 3. Might be float64 or planar.")
     
     # 4. Inspect GS Velocities (Try float32 first)
-    if os.path.exists(pos_file):
+    if os.path.exists(uvw_file):
         gs_velocities = np.fromfile(uvw_file, dtype=np.float32)[1:]
         print(f"\n[ GS Velocity File]: Found {len(gs_velocities)} floats (assuming float32).")
         
@@ -64,23 +64,14 @@ def inspect_binaries(base_dir, time_step=int):
             print("WARNING: Float count does not equal 3x Index count - 3. Might be float64 or planar.")
     
     # 4. Inspect Velocities (Try float32 first)
-    if os.path.exists(pos_file):
+    if os.path.exists(velocity_file):
         velocities = np.fromfile(velocity_file, dtype=np.float32)[1:]
         print(f"\n[Velocity File]: Found {len(velocities)} floats (assuming float32).")
-        
-        # If interleaved (X,Y,Z, X,Y,Z), the number of floats should be exactly 3x the number of indices
-        if len(velocities) == (len(indices) * 3):
-            print("Structure looks like Interleaved (u, v, w).")
-            reshaped_vel = velocities.reshape(-1, 3)
-            print("First 3 velocities (u_tot, v_tot, w_tot):")
-            print(reshaped_vel[:3])
-        else:
-            print("WARNING: Float count does not equal 3x Index count - 3. Might be float64 or planar.")
-
+        print(f"First 10 Velocities: {velocities[:50]}")
     else:
-        print(f"Could not find {pos_file}")
+        print(f"Could not find {velocity_file}")
 
 if __name__ == "__main__":
     # Update this path to where your .bin files are stored
-    bin_dir = r"Y:\20260527_particle_flat_3072"
-    inspect_binaries(bin_dir, time_step=1200)
+    bin_dir = r"Z:\20260817_particle_flat_3072"
+    inspect_binaries(bin_dir, time_step=1600)
