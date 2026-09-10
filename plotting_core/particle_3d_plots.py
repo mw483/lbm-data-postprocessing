@@ -3,6 +3,7 @@ import numpy as np
 import os
 import sys
 from scipy.ndimage import gaussian_filter
+import polars as pl
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.map_io import create_voxel_buildings, load_lbm_map
@@ -569,3 +570,205 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
     print("Interactive window opened. Press 's' to save a screenshot.")
     plotter.show()
 
+
+def plot_particles_with_velocity(
+    particle_df,
+    sensor_center,
+    sensor_size,
+    save_path,
+    scalar_field="vel_mag",
+    display_mode="points",       # "points" (dots) or "lines" (streamlines)
+    point_size=4.0,
+    stride=1,                    # Subsample stride to keep rendering responsive
+    map_filepath=None,
+    dx=2.0,
+    crop_approach=False,
+    x_start=3072.0 
+):
+    """
+    Renders 3D particles colored by instantaneous velocity components or kinetic energy.
+    Supported scalar_field values: 'u', 'v', 'w', 'vel_mag', 'tke_sgs', 'w_total'
+    """
+    if particle_df is None or len(particle_df) == 0:
+        print("[ERROR] No particle data provided to plot.")
+        return
+
+    #1. Subsample points if needed for interactive performance
+    if stride > 1:
+        particle_df = particle_df.gather_every(stride)
+
+    if crop_approach:
+        particle_df = particle_df.filter(pl.col("x") >= x_start)
+
+    # 2. Extract coordinates
+    pts = np.column_stack((
+        particle_df["x"].to_numpy(),
+        particle_df["y"].to_numpy(),
+        particle_df["z"].to_numpy()
+    ))
+
+    # 3. Compute requested scalar field and select colormap
+    u = particle_df["u"].to_numpy()
+    v = particle_df["v"].to_numpy()
+    w = particle_df["w"].to_numpy()
+    u_sgs = particle_df["u_sgs"].to_numpy()
+    v_sgs = particle_df["v_sgs"].to_numpy()
+    w_sgs = particle_df["w_sgs"].to_numpy()
+
+    if scalar_field == "u":
+        scalars = u
+        cmap = "viridis"
+        bar_title = "Streamwise u [m/s]"
+        clim = None
+    elif scalar_field == "v":
+        scalars = v
+        cmap = "coolwarm"
+        bar_title = "Spanwise v [m/s]"
+        max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
+        clim = [-max_abs, max_abs]
+    elif scalar_field == "w":
+        scalars = w
+        cmap = "coolwarm"
+        bar_title = "Vertical w [m/s]"
+        max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
+        clim = [-max_abs, max_abs]
+    elif scalar_field == "w_total":
+        scalars = w + w_sgs
+        cmap = "coolwarm"
+        bar_title = "Total Vertical w [m/s]"
+        max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
+        clim = [-max_abs, max_abs]
+    elif scalar_field == "tke_sgs":
+        scalars = 0.5 * (u_sgs**2 + v_sgs**2 + w_sgs**2)
+        cmap = "inferno"
+        bar_title = "SGS TKE [m$^2$/s$^2$]"
+        clim = [0.0, np.percentile(scalars, 99)]
+    elif scalar_field == "vel_mag":
+        # u_tot = u + u_sgs
+        # v_tot = v + v_sgs
+        # w_tot = w + w_sgs
+        scalars = np.sqrt(u**2 + v**2 + w**2)
+        cmap = "plasma"
+        bar_title = "Velocity Magnitude |U| [m/s]"
+        clim = [0.0, np.percentile(scalars, 99)]
+    else:
+        raise ValueError(f"Unknown scalar_field: {scalar_field}")
+
+    # 4. Construct PyVista PolyData
+    poly = pv.PolyData(pts)
+    poly.point_data[bar_title] = scalars
+
+    # If lines mode is selected, connect IDs into continuous polylines
+    if display_mode == "lines":
+        particle_ids = particle_df["id"].to_numpy()
+        unique_ids, split_indices = np.unique(particle_ids, return_index=True)
+        id_groups = np.split(np.arange(len(pts)), split_indices[1:])
+        
+        line_cells = []
+        for group in id_groups:
+            if len(group) >= 2:
+                line_cells.append(len(group))
+                line_cells.extend(group)
+        poly.lines = np.array(line_cells)
+
+    # 5. Define Sensor Bounding Box
+    cx, cy, cz = sensor_center
+    sx, sy, sz = sensor_size
+    bounds = [
+        cx - sx / 2.0, cx + sx / 2.0,
+        cy - sy / 2.0, cy + sy / 2.0,
+        cz - sz / 2.0, cz + sz / 2.0
+    ]
+    sensor_box = pv.Box(bounds=bounds)
+
+    # 6. Setup Plotter Scene
+    plotter = pv.Plotter(off_screen=False)
+    plotter.set_background("white")
+
+    # Add Particle Geometry
+    if display_mode == "points":
+        plotter.add_mesh(
+            poly,
+            scalars=bar_title,
+            cmap=cmap,
+            clim=clim,
+            render_points_as_spheres=True,
+            point_size=point_size,
+            opacity=0.85,
+            show_scalar_bar=True,
+            scalar_bar_args={"title": bar_title, "vertical": True, "title_font_size": 10}
+        )
+    else:
+        plotter.add_mesh(
+            poly,
+            scalars=bar_title,
+            cmap=cmap,
+            clim=clim,
+            line_width=1.5,
+            opacity=0.7,
+            show_scalar_bar=True,
+            scalar_bar_args={"title": bar_title, "vertical": True, "title_font_size": 10}
+        )
+
+    # Add Sensor Indicator
+    plotter.add_mesh(sensor_box, color="magenta", opacity=0.35, style="surface", label="Sensor Volume")
+    plotter.add_mesh(sensor_box, color="red", opacity=0.8, style="wireframe", line_width=2)
+
+    # 7. Add Map Geometry
+    if map_filepath and os.path.exists(map_filepath):
+        elevation_mat, nx_map, ny_map = load_lbm_map(map_filepath)
+        building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
+        
+        if building_mesh:
+            if crop_approach:
+                building_mesh = building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
+            plotter.add_mesh(
+                building_mesh,
+                color="lightgray",
+                opacity=0.9,
+                show_edges=True,
+                edge_color="darkgray",
+                label="Buildings"
+            )
+
+        # Snapped Ground Plane
+        x_max_ground = nx_map * dx
+        y_max_ground = ny_map * dx
+        if crop_approach:
+            x_len = x_max_ground - x_start
+            ground = pv.Plane(
+                center=(x_start + x_len / 2.0, y_max_ground / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_len,
+                j_size=y_max_ground
+            )
+        else:
+            ground = pv.Plane(
+                center=(x_max_ground / 2.0, y_max_ground / 2.0, 0.0),
+                direction=(0, 0, 1),
+                i_size=x_max_ground,
+                j_size=y_max_ground
+            )
+        plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
+
+    # 8. Viewport & Screenshot Control
+    plotter.camera_position = 'iso'
+    plotter.show_grid(
+        font_size=10,
+        fmt="%.0f",
+        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
+    )
+
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    snap_counter = [1]
+
+    def take_snap():
+        base_name, ext = os.path.splitext(save_path)
+        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
+        plotter.screenshot(unique_save_path)
+        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
+        snap_counter[0] += 1
+
+    plotter.add_key_event('s', take_snap)
+    print(f"Interactive window opened. Rendering {poly.n_points:,} particle points. Press 's' to capture view.")
+    plotter.show()

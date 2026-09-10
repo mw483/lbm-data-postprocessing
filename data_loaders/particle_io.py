@@ -196,3 +196,63 @@ def load_streamed_trajectories(csv_path, time_capsule_path, target_sensor_id):
 
     print(f"[SUCCESS] Filtered dataset ready for PyVista: {len(trajectories)} pathways.")
     return trajectories
+
+
+def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor_id=None, target_coords=None):
+    """
+    Parses the 11-column target_trajectories.csv, filters using the Time Capsule,
+    and returns coordinate points along with resolved and SGS velocity arrays.
+    """
+    #1. Harvest target particle IDs from the Time Capsule
+    capsule_df = pl.read_csv(
+        time_capsule_path,
+        separator=" ",
+        has_header=False,
+        new_columns=["Sensor_ID", "SX", "SY", "SZ", "Source_ID", "Particle_ID"]
+    )
+
+    if target_sensor_id is not None:
+        matched_df = capsule_df.filter(pl.col("Sensor_ID") == target_sensor_id)
+    elif target_coords is not None:
+        tx, ty, tz = target_coords
+        matched_df = capsule_df.filter(
+            (pl.col("SX") - tx).abs() < 0.1,
+            (pl.col("SY") - ty).abs() < 0.1,
+            (pl.col("Sz") - tz).abs() < 0.1
+        )
+    else:
+        raise ValueError("[ERROR] Must specify either target_sensor_id or target_coords.")
+
+    target_ids = matched_df["Particle_ID"].unique().to_list()
+    if len(target_ids) == 0:
+        print(f"[ERROR] No particles found in Time Capsule for specified sensor.")
+        return None
+
+    print(f"Found {len(target_ids):,} target particles. Scanning 11-column trajectory database...")
+
+    # 2. Read all 11 columns with Polars LazyFrame
+    cols = ["step", "id", "x", "y", "z", "u", "v", "w", "u_sgs", "v_sgs", "w_sgs"]
+
+    # c_ref to adjust to actual lattice velocity
+
+    c_ref = 100.0
+
+    vel_cols = ["u", "v", "w", "u_sgs", "v_sgs", "w_sgs"]
+
+    df = (
+        pl.scan_csv(
+            csv_path,
+            has_header=False,
+            separator=",",
+            new_columns=cols
+        )
+        .filter(pl.col("id").is_in(target_ids))
+        .with_columns([
+            (pl.col(c) * c_ref).alias(c) for c in vel_cols
+        ])
+        .sort(["id", "step"])
+        .collect()
+    )
+
+    return df
+
