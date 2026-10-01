@@ -198,10 +198,18 @@ def load_streamed_trajectories(csv_path, time_capsule_path, target_sensor_id):
     return trajectories
 
 
-def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor_id=None, target_coords=None):
+def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor_id=None, target_coords=None,
+                                      c_ref=100.0, flg_particle=1):
     """
     Parses the 11-column target_trajectories.csv, filters using the Time Capsule,
-    and returns coordinate points along with resolved and SGS velocity arrays.
+    and returns coordinate points along with velocity columns, all in m/s:
+        u, v, w              velocity the particle moves with (resolved + SGS when flg_particle = 1)
+        u_sgs, v_sgs, w_sgs  SGS velocity
+        u_res, v_res, w_res  resolved (grid-scale) velocity
+
+    The C++ suite copies the solver's uvw*.bin (lattice units, already including SGS when
+    flg_particle = 1) and uvw_sgs*.bin (already m/s). So only u, v, w are scaled by c_ref
+    (= velocity / cfl from "-velocity_lbm" in mpirun.sh, e.g. 2.0 / 0.02 = 100).
     """
     #1. Harvest target particle IDs from the Time Capsule
     capsule_df = pl.read_csv(
@@ -218,7 +226,7 @@ def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor
         matched_df = capsule_df.filter(
             (pl.col("SX") - tx).abs() < 0.1,
             (pl.col("SY") - ty).abs() < 0.1,
-            (pl.col("Sz") - tz).abs() < 0.1
+            (pl.col("SZ") - tz).abs() < 0.1
         )
     else:
         raise ValueError("[ERROR] Must specify either target_sensor_id or target_coords.")
@@ -233,11 +241,7 @@ def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor
     # 2. Read all 11 columns with Polars LazyFrame
     cols = ["step", "id", "x", "y", "z", "u", "v", "w", "u_sgs", "v_sgs", "w_sgs"]
 
-    # c_ref to adjust to actual lattice velocity
-
-    c_ref = 100.0
-
-    vel_cols = ["u", "v", "w", "u_sgs", "v_sgs", "w_sgs"]
+    lattice_cols = ["u", "v", "w"]
 
     df = (
         pl.scan_csv(
@@ -248,7 +252,11 @@ def load_trajectories_with_velocities(csv_path, time_capsule_path, target_sensor
         )
         .filter(pl.col("id").is_in(target_ids))
         .with_columns([
-            (pl.col(c) * c_ref).alias(c) for c in vel_cols
+            (pl.col(c) * c_ref).alias(c) for c in lattice_cols
+        ])
+        .with_columns([
+            (pl.col(c) - pl.col(f"{c}_sgs")).alias(f"{c}_res") if flg_particle == 1 else pl.col(c).alias(f"{c}_res")
+            for c in lattice_cols
         ])
         .sort(["id", "step"])
         .collect()

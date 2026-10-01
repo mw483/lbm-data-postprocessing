@@ -1,42 +1,41 @@
 import os
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 
+from data_loaders.particle_bin import load_step, particle_velocities
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
 def main():
-    # 1. Paths
+    # 1. Settings
     bin_dir = r"Z:\20260527_particle_flat_3072"
     time_step = 1600
-    
-    uvw_file = os.path.join(bin_dir, f"uvw0-{time_step}.bin")
-    sgs_file = os.path.join(bin_dir, f"uvw_sgs0-{time_step}.bin")
-    output_dir = r"../figures/flat_domain/metrics"
+    c_ref = 100.0          # = velocity / cfl from "-velocity_lbm 2.0 0.02" in mpirun.sh
+    flg_particle = 1       # from Define_user.h; 1 means uvw already includes the SGS velocity
+    output_dir = REPO_ROOT / "figures" / "flat_domain" / "metrics"
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"--- Analyzing Particle Kinematics at T={time_step} ---")
 
-    # 2. Load and parse the binaries (Stripping the 1-item header)
-    if not os.path.exists(uvw_file) or not os.path.exists(sgs_file):
-        print("[ERROR] Binary files not found.")
-        return
+    # 2. Load all rank files for this step (uvw in lattice units, uvw_sgs in m/s)
+    data = load_step(bin_dir, time_step, fields=("uvw", "uvw_sgs"))
+    vel = particle_velocities(data, c_ref=c_ref, flg_particle=flg_particle)
 
-    # Reshape into N rows by 3 columns (U, V, W)
-    gs_velocities = np.fromfile(uvw_file, dtype=np.float32)[1:].reshape(-1, 3)
-    sgs_velocities = np.fromfile(sgs_file, dtype=np.float32)[1:].reshape(-1, 3)
-
-    num_particles = len(gs_velocities)
+    num_particles = len(vel["total"])
     print(f"Successfully loaded {num_particles} particles.")
 
-    # 3. Extract Lateral (Crosswind) Velocities (Index 1 is the 'V' component)
-    v_gs = gs_velocities[:, 1]
-    v_sgs = sgs_velocities[:, 1]
+    # 3. Lateral (crosswind) velocities, index 1 = v, all in m/s
+    v_gs = vel["resolved"][:, 1]
+    v_sgs = vel["sgs"][:, 1]
+    v_total = vel["total"][:, 1]
 
-    # 4. Calculate Core Turbulence Statistics
-    # Standard deviation of velocity = Sigma_v
+    # 4. Turbulence statistics
     sigma_v_gs = np.std(v_gs)
     sigma_v_sgs = np.std(v_sgs)
-    
-    # Total effective lateral turbulence via variance addition
-    sigma_v_eff = np.sqrt(sigma_v_gs**2 + sigma_v_sgs**2)
+    # Spread of the velocity each particle actually moves with (resolved + SGS)
+    sigma_v_eff = np.std(v_total)
 
     print("\n--- LATERAL TURBULENCE (SIGMA_V) RESULTS ---")
     print(f"Resolved Grid Sigma_v  : {sigma_v_gs:.4f} m/s")

@@ -606,9 +606,13 @@ def plot_particles_with_velocity(
     ))
 
     # 3. Compute requested scalar field and select colormap
-    u = particle_df["u"].to_numpy()
-    v = particle_df["v"].to_numpy()
-    w = particle_df["w"].to_numpy()
+    # u, v, w = resolved (grid-scale); *_total = what the particle moves with (resolved + SGS)
+    u = particle_df["u_res"].to_numpy()
+    v = particle_df["v_res"].to_numpy()
+    w = particle_df["w_res"].to_numpy()
+    u_total = particle_df["u"].to_numpy()
+    v_total = particle_df["v"].to_numpy()
+    w_total = particle_df["w"].to_numpy()
     u_sgs = particle_df["u_sgs"].to_numpy()
     v_sgs = particle_df["v_sgs"].to_numpy()
     w_sgs = particle_df["w_sgs"].to_numpy()
@@ -631,7 +635,7 @@ def plot_particles_with_velocity(
         max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
         clim = [-max_abs, max_abs]
     elif scalar_field == "w_total":
-        scalars = w + w_sgs
+        scalars = w_total
         cmap = "coolwarm"
         bar_title = "Total Vertical w [m/s]"
         max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
@@ -642,10 +646,7 @@ def plot_particles_with_velocity(
         bar_title = "SGS TKE [m$^2$/s$^2$]"
         clim = [0.0, np.percentile(scalars, 99)]
     elif scalar_field == "vel_mag":
-        # u_tot = u + u_sgs
-        # v_tot = v + v_sgs
-        # w_tot = w + w_sgs
-        scalars = np.sqrt(u**2 + v**2 + w**2)
+        scalars = np.sqrt(u_total**2 + v_total**2 + w_total**2)
         cmap = "plasma"
         bar_title = "Velocity Magnitude |U| [m/s]"
         clim = [0.0, np.percentile(scalars, 99)]

@@ -2,18 +2,19 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Ensure Python can find the modular packages
+from pathlib import Path
+
 from data_loaders.footprint_io import load_source_positions
+from data_loaders.particle_bin import load_step, source_id
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     # 1. Paths
     bin_dir = r"Z:\20260527_particle_flat_3072"
     pos_file = r"Z:\particle_position\particle_position.txt"
     time_step = 1800
-    
-    idx_file = os.path.join(bin_dir, f"index0-{time_step}.bin")
-    pos_file_bin = os.path.join(bin_dir, f"position0-{time_step}.bin")
-    output_dir = r"../figures/flat_domain/metrics"
+    output_dir = REPO_ROOT / "figures" / "flat_domain" / "metrics"
     os.makedirs(output_dir, exist_ok=True)
 
     print(f"--- Calculating Ensemble Spatial Plume Dispersion at T={time_step} ---")
@@ -21,13 +22,10 @@ def main():
     # 2. Load Source Map and Particle Binaries
     source_map = load_source_positions(pos_file)
     
-    if not os.path.exists(idx_file) or not os.path.exists(pos_file_bin):
-        print("[ERROR] Binary files not found.")
-        return
-
-    indices = np.fromfile(idx_file, dtype=np.int32)[1:]
-    positions = np.fromfile(pos_file_bin, dtype=np.float32)[1:].reshape(-1, 3)
-    source_ids = indices // 10000
+    # All rank files for this step
+    data = load_step(bin_dir, time_step, fields=("index", "position"))
+    positions = data["position"]
+    source_ids = source_id(data["index"])
 
     print(f"Loaded {len(positions)} total particles. Calculating relative displacements...")
 
