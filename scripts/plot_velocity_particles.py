@@ -1,10 +1,7 @@
 import os
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.append(str(REPO_ROOT))
 
 from data_loaders.particle_io import load_trajectories_with_velocities
 from plotting_core.particle_3d_plots import plot_particles_with_velocity

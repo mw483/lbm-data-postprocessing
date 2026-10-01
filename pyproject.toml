@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lbm-postprocessing"
+version = "0.1.0"
+description = "Analysis and plotting of LBM wind fields and Lagrangian particle data"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0",
+    "pandas",
+    "polars",
+    "scipy",
+    "matplotlib",
+    "pyvista",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.setuptools]
+packages = ["data_loaders", "physics_core", "plotting_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

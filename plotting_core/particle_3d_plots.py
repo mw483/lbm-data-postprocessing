@@ -1,11 +1,9 @@
 import pyvista as pv
 import numpy as np
 import os
-import sys
 from scipy.ndimage import gaussian_filter
 import polars as pl
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.map_io import create_voxel_buildings, load_lbm_map
 
 pv.global_theme.allow_empty_mesh = True # Allow empty mesh (for flat plane maps)

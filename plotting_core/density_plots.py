@@ -1,9 +1,7 @@
-import sys
 import os
 import pyvista as pv
 import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.map_io import load_lbm_map, create_voxel_buildings
 from data_loaders.lbm_parsers import build_3d_density_volume, build_sensor_density_volume

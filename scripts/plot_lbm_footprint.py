@@ -1,8 +1,6 @@
 import os
-import sys
 
 # Add the project root to the system path to allow module imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
 from physics_core.footprint_processing import merge_counts_with_positions

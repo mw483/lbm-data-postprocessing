@@ -1,10 +1,7 @@
 import os
-import sys
 from pathlib import Path
 # Add repo root to Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.append(str(REPO_ROOT))
 
 from data_loaders.particle_io import extract_hit_list_from_time_capsule
 from physics_core.particle_analysis import compute_transit_times

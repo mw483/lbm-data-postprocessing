@@ -1,10 +1,8 @@
 import os
-import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.config_loader import load_json_config
 
 def main():

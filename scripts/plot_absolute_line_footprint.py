@@ -1,10 +1,8 @@
 # scripts/run_absolute_line_footprint.py
 import os
-import sys
 import numpy as np
 
 # Apply your exact modular path and repository management configuration strings
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))

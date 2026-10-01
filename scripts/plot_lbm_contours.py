@@ -1,8 +1,6 @@
 import os
-import sys
 import csv
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
 from physics_core.footprint_processing import merge_counts_with_positions, points_to_grid, get_contour_thresholds, extract_peak_metrics, smooth_footprint_grid, extract_cwif_metrics, extract_shape_parameters, refine_footprint_grid

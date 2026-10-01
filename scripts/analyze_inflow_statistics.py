@@ -1,10 +1,8 @@
 import os
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Ensure Python can find the modular packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.lbm_parsers import XZMatrixParser
 from physics_core.turbulence import calc_sigma_v, calc_u_star
 

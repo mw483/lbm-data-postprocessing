@@ -1,13 +1,10 @@
 # scripts/run_spanwise_footprint_pipeline.py
 import os
-import sys
 import numpy as np
 
 # 1. Clean Path Management: Separate Python path tracking from file export paths
 script_dir = os.path.dirname(os.path.abspath(__file__))
 python_root = os.path.abspath(os.path.join(script_dir, '..'))
-if python_root not in sys.path:
-    sys.path.insert(0, python_root)
 
 # Explicitly point to your professor's requested figures subdirectory
 figure_output_dir = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))

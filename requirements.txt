@@ -1,0 +1,9 @@
+# Same list as pyproject.toml. Install everything (including this repo's packages) with:
+#   pip install -e .[dev]
+numpy>=2.0
+pandas
+polars
+scipy
+matplotlib
+pyvista
+pytest

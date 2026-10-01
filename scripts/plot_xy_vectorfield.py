@@ -1,11 +1,9 @@
-import sys
 import os
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import numpy as np
 
 # Adjust path to import modules from the parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_loaders.lbm_parsers import XYStackedParser
 from plotting_core.utils import apply_axis_zoom
 # from plotting_core.theme import REPORT_THEME # You can wire this up later

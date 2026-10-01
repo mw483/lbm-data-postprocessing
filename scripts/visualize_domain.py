@@ -1,8 +1,6 @@
 import os
-import sys
 
 # Ensure Python can find the modular packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.footprint_io import load_source_positions
 from data_loaders.map_io import load_lbm_map

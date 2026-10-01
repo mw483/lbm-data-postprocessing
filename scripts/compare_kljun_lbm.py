@@ -3,7 +3,6 @@ import sys
 import numpy as np
 import pandas as pd
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.config_loader import load_json_config
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts
