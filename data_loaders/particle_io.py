@@ -175,7 +175,7 @@ def load_streamed_trajectories(csv_path, time_capsule_path, target_sensor_id):
     )
 
     # 3. Filter the millions of rows down to only the target particles
-    filtered_df = traj_df.filter(pl.col("Particle_ID").is_in(target_ids))
+    filtered_df = traj_df.filter(pl.col("Particle_ID").is_in(target_ids.to_list()))
 
     # 4. Sort by time
     # Important
