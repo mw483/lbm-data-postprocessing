@@ -69,3 +69,22 @@ def fit_boundary_layer_profile(z_array, u_array, max_fit_height=40.0):
     
     u_star, z0 = popt
     return u_star, z0
+
+def virtual_tower(fields, x, dx=2.0, dz=2.0):
+    """
+    Vertical profiles at streamwise position x [m] from y-averaged XZ fields
+    (load_xz_yav output, arrays indexed [z_idx, x_idx]).
+
+    Returns a dict with "z" [m] (= z_idx * dz) and every available field as a column,
+    plus "sigma_v" (needs vv, vm) and "u_star" (needs uw, um, wm).
+    """
+    any_field = next(iter(fields.values()))
+    x_idx = min(int(x / dx), any_field.shape[1] - 1)
+    profile = {"z": np.arange(any_field.shape[0]) * dz}
+    for name, mat in fields.items():
+        profile[name] = mat[:, x_idx]
+    if "vv" in fields and "vm" in fields:
+        profile["sigma_v"] = calc_sigma_v(profile["vv"], profile["vm"])
+    if all(k in fields for k in ("uw", "um", "wm")):
+        profile["u_star"] = calc_u_star(profile["uw"], profile["um"], profile["wm"])
+    return profile

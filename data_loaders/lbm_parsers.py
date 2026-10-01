@@ -145,3 +145,23 @@ def build_3d_density_volume(directory_path):
     
     print(f"Successfully built 3D volume with shape (in grids): {volume_3d.shape}")
     return volume_3d
+
+
+def xz_yav_path(output_dir, var, step, rank=0):
+    """Path of a y-averaged XZ plane CSV, e.g. xz_yav_um00180000_0000.csv (step = output step number)."""
+    return os.path.join(output_dir, f"xz_yav_{var}{int(step):08d}_{int(rank):04d}.csv")
+
+
+def load_xz_yav(output_dir, step, variables=("um", "vm", "vv", "wm", "uw"), rank=0):
+    """
+    Load several y-averaged XZ planes of one output step.
+    Returns {var: 2D array [z_idx, x_idx]}. Raises FileNotFoundError if one is missing.
+    """
+    fields = {}
+    for var in variables:
+        path = xz_yav_path(output_dir, var, step, rank)
+        mat = XZMatrixParser.parse_file(path)
+        if mat is None:
+            raise FileNotFoundError(path)
+        fields[var] = mat
+    return fields

@@ -3,17 +3,19 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Ensure Python can find the modular packages
-from data_loaders.lbm_parsers import XZMatrixParser
-from physics_core.turbulence import calc_sigma_v
+from pathlib import Path
+
+from data_loaders.lbm_parsers import load_xz_yav
+from physics_core.turbulence import virtual_tower
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     # 1. Paths
     base_out = r"Z:\20260527_output_flat_3072"
-    vm_csv = os.path.join(base_out, "xz_yav_vm00180000_0000.csv")
-    vv_csv = os.path.join(base_out, "xz_yav_vv00180000_0000.csv")
-    
-    output_dir = r"../figures/flat_domain/metrics"
+    t_step = 180000
+
+    output_dir = REPO_ROOT / "figures" / "flat_domain" / "metrics"
     os.makedirs(output_dir, exist_ok=True)
 
     # 2. Configuration
@@ -23,25 +25,17 @@ def main():
     sensor_heights = [10, 20, 30, 40, 48, 56]
 
     print("Loading XZ fluid matrices...")
-    vm_mat = XZMatrixParser.parse_file(vm_csv)
-    vv_mat = XZMatrixParser.parse_file(vv_csv)
-    
-    if vm_mat is None or vv_mat is None:
-        print("[ERROR] Failed to load XZ matrices. Exiting.")
+    try:
+        fields = load_xz_yav(base_out, t_step, variables=("vm", "vv"))
+    except FileNotFoundError as e:
+        print(f"[ERROR] Failed to load XZ matrices: {e}")
         sys.exit(1)
 
-    # 3. Extract the Vertical Column at X = 600m
-    x_idx = min(int(sensor_x / dx_lbm), vm_mat.shape[1] - 1)
-    z_indices = np.arange(vm_mat.shape[0])
-    z_heights = z_indices * dz_lbm
-
-    sigma_v_profile = []
-    
+    # 3. Virtual tower at X = sensor_x: sigma_v = sqrt(vv - vm^2)
     print(f"Calculating true resolved sigma_v for Virtual Tower at X={sensor_x}m...")
-    for z in z_indices:
-        # Calculate true variance using Reynolds decomposition: sqrt(vv - vm^2)
-        sv = calc_sigma_v(vv_mat[z, x_idx], vm_mat[z, x_idx])
-        sigma_v_profile.append(sv)
+    tower = virtual_tower(fields, sensor_x, dx=dx_lbm, dz=dz_lbm)
+    z_heights = tower["z"]
+    sigma_v_profile = tower["sigma_v"]
 
     # 4. Generate the Seminar Plot
     fig, ax = plt.subplots(figsize=(7, 9))

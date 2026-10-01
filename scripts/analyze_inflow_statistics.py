@@ -2,26 +2,20 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Ensure Python can find the modular packages
-from data_loaders.lbm_parsers import XZMatrixParser
-from physics_core.turbulence import calc_sigma_v, calc_u_star
+from pathlib import Path
+
+from data_loaders.lbm_parsers import load_xz_yav
+from physics_core.turbulence import virtual_tower
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     # 1. Paths and Configuration
     base_out = r"Y:\20260707_output_flat_shortroughness_4mvel"
-    t_step = "00180000"  # The specific suffix for time step 1200
-
+    t_step = 180000  # output step number in the file names (xz_yav_um00180000_0000.csv)
     rank_x = 0
-    rank_y = 0
-    rank_z = 0
 
-    um_csv = os.path.join(base_out, f"xz_yav_um{t_step}_000{rank_x}.csv")
-    vm_csv = os.path.join(base_out, f"xz_yav_vm{t_step}_000{rank_x}.csv")
-    vv_csv = os.path.join(base_out, f"xz_yav_vv{t_step}_000{rank_x}.csv")
-    wm_csv = os.path.join(base_out, f"xz_yav_wm{t_step}_000{rank_x}.csv")
-    uw_csv = os.path.join(base_out, f"xz_yav_uw{t_step}_000{rank_x}.csv")
-
-    output_dir = r"../figures/flat_domain/inflow_analysis/with_ustar"
+    output_dir = REPO_ROOT / "figures" / "flat_domain" / "inflow_analysis" / "with_ustar"
     os.makedirs(output_dir, exist_ok=True)
 
     dx_lbm = 2.0
@@ -30,38 +24,24 @@ def main():
     colors = ['#d62728', '#2ca02c', '#1f77b4', "#6c1fb4"] # Red, Green, Blue, Purple
 
     print(f"Loading XZ fluid matrices for step {t_step}...")
-    um_mat = XZMatrixParser.parse_file(um_csv)
-    vm_mat = XZMatrixParser.parse_file(vm_csv)
-    vv_mat = XZMatrixParser.parse_file(vv_csv)
-    wm_mat = XZMatrixParser.parse_file(wm_csv)
-    uw_mat = XZMatrixParser.parse_file(uw_csv)
-    
-    if um_mat is None or vm_mat is None or vv_mat is None:
-        print("[ERROR] Failed to load one or more XZ matrices. Check file paths.")
+    try:
+        fields = load_xz_yav(base_out, t_step, rank=rank_x)
+    except FileNotFoundError as e:
+        print(f"[ERROR] Missing XZ matrix: {e}")
         return
-
-    z_indices = np.arange(um_mat.shape[0])
-    z_heights = z_indices * dz_lbm
+    um_mat = fields["um"]
 
     # 2. Generate the Side-by-Side Plot
     fig, (ax1, ax2, ax3) = plt.subplots(nrows=1, ncols=3, figsize=(18, 6), sharey=True)
-    fig.suptitle(f"Boundary Layer & Turbulence Development over Flat Fetch (T={t_step[2:6]})", fontsize=15, fontweight='bold')
+    fig.suptitle(f"Boundary Layer & Turbulence Development over Flat Fetch (T={t_step})", fontsize=15, fontweight='bold')
 
     for x_loc, color in zip(x_targets, colors):
-        # Map X-coordinate to grid index
-        x_idx = min(int(x_loc / dx_lbm), um_mat.shape[1] - 1)
-        
-        # Extract columns
-        u_profile = um_mat[:, x_idx]
-        vm_profile = vm_mat[:, x_idx]
-        vv_profile = vv_mat[:, x_idx]
-        wm_profile = wm_mat[:, x_idx]
-        uw_profile = uw_mat[:, x_idx]
-        
-        # Calculate true resolved lateral turbulence
-        sig_v_profile = calc_sigma_v(vv_profile, vm_profile)
-        u_star_profile = calc_u_star(uw_profile, u_profile, wm_profile)
-        
+        tower = virtual_tower(fields, x_loc, dx=dx_lbm, dz=dz_lbm)
+        z_heights = tower["z"]
+        u_profile = tower["um"]
+        sig_v_profile = tower["sigma_v"]
+        u_star_profile = tower["u_star"]
+
         # Plot Mean Streamwise Velocity (U)
         ax1.plot(u_profile, z_heights, color=color, linewidth=2.5, 
                  label=f'Fetch X = {x_loc}m')
