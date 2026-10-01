@@ -1,6 +1,5 @@
 import os
 
-# Ensure Python can find the modular packages
 
 from data_loaders.footprint_io import load_source_positions
 from data_loaders.map_io import load_lbm_map

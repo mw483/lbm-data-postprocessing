@@ -5,7 +5,6 @@ from pathlib import Path
 from scipy.ndimage import gaussian_filter
 import os
 
-# Ensure Python can find the modular packages
 
 # 1. Import your newly implemented footprint smoothing function
 # (Ensure your execution directory has physics_core in its python path)
