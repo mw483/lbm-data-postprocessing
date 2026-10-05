@@ -31,8 +31,8 @@ def main():
         max_t = 3.0        # Dimensionless scale limit
     
     # Target case: Switch between Flat and Cube cases
-    case_name = "Cube Array"
-    run = "20260803_particle_cube_16mapproach"   # folder under particle_outputs
+    case_name = "Flat"
+    run = "20260630_particle_flat_16mapproach"   # folder under particle_outputs
     paths = load_local_paths()   # per-machine folders, see local_paths.example.yaml
     csv_path = sensor_output_dir(paths, run) / "target_trajectories.csv"
     capsule_path = sensor_output_dir(paths, run) / "sensor_hit_ids.txt"

@@ -14,9 +14,9 @@ def main():
     # =========================================================================
     dt_output = 1.0       # Seconds between particle .bin outputs (1 s, confirmed by kaka 2026-10-05)
     bin_width = 4.0       # Histogram bin size in seconds
-    max_time = 600.0      # Set maximum x-axis transit time (or None for auto)
+    max_time = None     # Set maximum x-axis transit time (or None for auto)
 
-    sensor_x, sensor_y, sensor_z = 3672.0, 128.0, 90.0
+    sensor_x, sensor_y, sensor_z = 3672.0, 256.0, 90.0
     sensor_size = (8.0, 8.0, 8.0)   # SIZE_SENSOR_DENSITY used by the C++ run (sensor_8x8x8)
 
     paths = load_local_paths()   # per-machine folders, see local_paths.example.yaml
