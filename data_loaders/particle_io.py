@@ -142,6 +142,21 @@ def extract_hit_list_by_plane(
     return hit_list
 
 
+HIT_COLUMNS = ["sensor_id", "sx", "sy", "sz", "source_id", "id"]
+
+
+def load_hit_table(filepath: Union[str, Path]) -> pl.DataFrame:
+    """
+    Reads the C++ sensor_hit_ids.txt as a table, one row per (sensor, particle) hit.
+    Columns: sensor_id, sx, sy, sz (sensor centre in metres, truncated to int by the C++),
+    source_id, id.
+    """
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError(f"[ERROR] Time capsule not found: {filepath}")
+    return pl.read_csv(filepath, separator=" ", has_header=False, new_columns=HIT_COLUMNS)
+
+
 def load_streamed_trajectories(csv_path, time_capsule_path, target_sensor_id):
     """
     Rapidly parses a massive trajectory CSV using Polars, filters it using the Time Capsule, 

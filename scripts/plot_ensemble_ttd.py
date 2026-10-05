@@ -2,7 +2,9 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-from data_loaders.particle_io import extract_hit_list_by_plane
+import polars as pl
+
+from data_loaders.particle_io import load_hit_table
 from physics_core.particle_analysis import (
     compute_transit_times,
     compute_depth_averaged_u,
@@ -17,7 +19,8 @@ def main():
     sensor_x = 3672.0
     delta_x = 600.0         # Source to receptor fetch distance
     heights = [20.0, 50.0, 90.0]
-    dt_output = 1.0
+    sensor_size = (8.0, 8.0, 8.0)   # SIZE_SENSOR_DENSITY used by the C++ run (sensor_8x8x8)
+    dt_output = 1.0         # Seconds between particle .bin outputs (1 s, confirmed by kaka 2026-10-05)
     scaling_method = "no_normalization"  # Options: "median", "advective", "eddy_turnover", "no_normalization"
 
     # Set parameters conditionally based on the method
@@ -45,20 +48,20 @@ def main():
     for z in heights:
         print(f"\n--- Processing Height Z = {z:.1f} m ---")
         
-        # 1. Harvest particles across all Y sensors at (sensor_x, z)
-        hit_ids = extract_hit_list_by_plane(capsule_path, target_x=sensor_x, target_z=z)
-        print(f"  -> Intercepted {len(hit_ids):,} unique particles along spanwise line.")
-        
-        if len(hit_ids) == 0:
+        # 1. Hits at every spanwise (Y) sensor at (sensor_x, z)
+        hits = load_hit_table(capsule_path).filter(
+            ((pl.col("sx") - sensor_x).abs() <= 0.5) & ((pl.col("sz") - z).abs() <= 0.5)
+        )
+        print(f"  -> {hits.height:,} hits along the spanwise line.")
+
+        if hits.height == 0:
             continue
 
-        # 2. Extract transit times using Polars
-        delta_t = compute_transit_times(
-            csv_path=csv_path,
-            target_ids=hit_ids,
-            dt_output=dt_output,
-            separator=","
-        )
+        # 2. Release -> first entry into a sensor box; a particle that hit several sensors
+        #    on the line counts once, at its earliest arrival (same N as the old unique-ID set)
+        transit = compute_transit_times(csv_path, hits, sensor_size, dt_output=dt_output)
+        delta_t = transit.group_by("id").agg(pl.col("delta_t").min())["delta_t"].to_numpy()
+        print(f"  -> {len(delta_t):,} unique particles with an arrival time.")
 
         # 3. Apply normalization
         u_bar = compute_depth_averaged_u(prof_path, target_z=z) if scaling_method == "advective" else None
@@ -83,7 +86,8 @@ def main():
         bin_width=bin_w,
         max_scaled_t=max_t,
         save_path=output_fig,
-        title=f"{case_name}: Spanwise-Ensemble Normalized TTD ({scaling_method.capitalize()} Scaling)"
+        title=f"{case_name}: Spanwise-Ensemble Normalized TTD ({scaling_method.capitalize()} Scaling)",
+        density=False   # raw counts (professor's request, 2026-10-05)
     )
 
 if __name__ == "__main__":

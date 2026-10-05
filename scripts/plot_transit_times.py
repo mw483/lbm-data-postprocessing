@@ -3,7 +3,9 @@ from pathlib import Path
 # Add repo root to Python path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-from data_loaders.particle_io import extract_hit_list_from_time_capsule
+import polars as pl
+
+from data_loaders.particle_io import load_hit_table
 from physics_core.particle_analysis import compute_transit_times
 from plotting_core.velocity_analysis_plots import plot_transit_time_distribution
 
@@ -11,11 +13,12 @@ def main():
     # =========================================================================
     # User Configuration
     # =========================================================================
-    dt_output = 1.0       # Time resolution per step in seconds
-    bin_width = 4.0       # PDF histogram bin size in seconds
+    dt_output = 1.0       # Seconds between particle .bin outputs (1 s, confirmed by kaka 2026-10-05)
+    bin_width = 4.0       # Histogram bin size in seconds
     max_time = 600.0      # Set maximum x-axis transit time (or None for auto)
 
     sensor_x, sensor_y, sensor_z = 3672.0, 128.0, 90.0
+    sensor_size = (8.0, 8.0, 8.0)   # SIZE_SENSOR_DENSITY used by the C++ run (sensor_8x8x8)
 
     # Output path
 
@@ -44,32 +47,23 @@ def main():
     for label, config in RUNS.items():
         print(f"\nProcessing {label}...")
         
-        # 1. Harvest target particle IDs using spatial coordinates
-        if config["capsule"].exists() and config.get("target_coords"):
-            coords = config["target_coords"]
-            print(f"  -> Reading Time Capsule for Sensor at {coords}...")
-            target_ids = extract_hit_list_from_time_capsule(
-                str(config["capsule"]), 
-                target_coords=coords
-            )
-            print(f"  -> Found {len(target_ids):,} matching particles.")
-        else:
-            print("  -> No valid time capsule or coordinates specified; skipping filtering.")
-            target_ids = None
+        # 1. Hits recorded by the C++ suite for this sensor (one particle per source)
+        if not config["capsule"].exists():
+            print("  -> Time capsule not found; skipping.")
+            continue
+        tx, ty, tz = config["target_coords"]
+        hits = load_hit_table(config["capsule"]).filter(
+            ((pl.col("sx") - tx).abs() < 0.1) & ((pl.col("sy") - ty).abs() < 0.1) & ((pl.col("sz") - tz).abs() < 0.1)
+        )
+        print(f"  -> Found {hits.height:,} hits for the sensor at {config['target_coords']}.")
+        if hits.height == 0:
+            continue
 
-        # 2. Extract transit times using Polars
-        if target_ids is not None and len(target_ids) > 0:
-            print(f"  -> Parsing transit times from: {config['csv'].name}...")
-            delta_t = compute_transit_times(
-                csv_path=config["csv"],
-                target_ids=target_ids,
-                dt_output=dt_output,
-                separator=","
-            )
-            print(f"  -> Successfully computed {len(delta_t):,} arrival values.")
-            transit_data[label] = delta_t
-        else:
-            print("  -> Zero valid IDs found. Skipping transit time computation.")
+        # 2. Release -> first entry into the sensor box
+        print(f"  -> Parsing transit times from: {config['csv'].name}...")
+        transit = compute_transit_times(config["csv"], hits, sensor_size, dt_output=dt_output)
+        print(f"  -> Computed {transit.height:,} arrival times.")
+        transit_data[label] = transit["delta_t"].to_numpy()
 
     # =========================================================================
     # Render & Export
@@ -80,7 +74,8 @@ def main():
             bin_width=bin_width,
             max_time=max_time,
             save_path=output_figure,
-            title="Receptor Transit Time Distribution (Flat vs. Cube Array)"
+            title="Receptor Transit Time Distribution (Flat vs. Cube Array)",
+            density=False   # raw counts (professor's request, 2026-10-05)
         )
 
 if __name__ == "__main__":

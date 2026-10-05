@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import MaxNLocator
 
 def plot_transit_time_distribution(
         data_dict: Dict[str, np.ndarray],
@@ -9,10 +10,12 @@ def plot_transit_time_distribution(
         max_time: Optional[float] = None,
         save_path: Optional[Union[str, Path]] = None,
         title: str = "Receptor Transit Time Distribution",
-        colors: Optional[list] = None
+        colors: Optional[list] = None,
+        density: bool = False
 ) -> None:
     """
-    Renders an overlay probability density function (PDF) of transit times.
+    Renders overlaid transit-time histograms: raw particle counts per bin by default,
+    or a probability density with density=True.
     
     Args:
         data_dict: Dictionary mapping case/sensor labels to delta_t numpy arrays.
@@ -21,6 +24,7 @@ def plot_transit_time_distribution(
         save_path: Filepath to save the figure (if None, calls plt.show()).
         title: Plot title.
         colors: Optional list of color codes for the curves.
+        density: False = particles per bin (raw counts), True = probability density.
     """
     if not data_dict:
         print("[WARNING] No data provided to plot_transit_time_distribution.")
@@ -45,14 +49,14 @@ def plot_transit_time_distribution(
             continue
 
         color = palette[i % len(palette)]
-        counts, edge_bins = np.histogram(valid_tt, bins=bins, density=True)
+        counts, edge_bins = np.histogram(valid_tt, bins=bins, density=density)
         peak_idx = np.argmax(counts)
         peak_time = 0.5 * (edge_bins[peak_idx] + edge_bins[peak_idx + 1])
 
         ax.hist(
             valid_tt,
             bins=bins,
-            density=True,
+            density=density,
             histtype="step",
             linewidth=2.0,
             color=color,
@@ -60,7 +64,11 @@ def plot_transit_time_distribution(
         )
 
     ax.set_xlabel(r"Transit Time $\Delta t$ [s]", fontsize=11)
-    ax.set_ylabel(r"Probability Density $P(\Delta t)$ [s$^{-1}$]", fontsize=11)
+    if density:
+        ax.set_ylabel(r"Probability Density $P(\Delta t)$ [s$^{-1}$]", fontsize=11)
+    else:
+        ax.set_ylabel(f"Particles per {bin_width:g} s bin", fontsize=11)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(title, fontsize=12)
     ax.grid(True, linestyle="--", alpha=0.5)
     ax.legend(frameon=True, fontsize=10)
@@ -82,10 +90,12 @@ def plot_normalized_ttd_comparison(
     bin_width: float = 0.05,
     max_scaled_t: float = 3.5,
     save_path: Optional[Union[str, Path]] = None,
-    title: str = "Spanwise-Ensemble Normalized Transit Time Distribution"
+    title: str = "Spanwise-Ensemble Normalized Transit Time Distribution",
+    density: bool = False
 ) -> None:
     """
-    Plots overlaid dimensionless breakthrough curves for multi-height comparison.
+    Plots overlaid breakthrough curves for multi-height comparison:
+    raw particle counts per bin by default, or a probability density with density=True.
     """
     bins = np.arange(0.0, max_scaled_t + bin_width, bin_width)
     fig, ax = plt.subplots(figsize=(8.5, 5.2))
@@ -101,7 +111,7 @@ def plot_normalized_ttd_comparison(
         ax.hist(
             valid,
             bins=bins,
-            density=True,
+            density=density,
             histtype="step",
             linewidth=2.0,
             color=color,
@@ -113,7 +123,11 @@ def plot_normalized_ttd_comparison(
         ax.axvline(1.0, color="gray", linestyle=":", label=r"Median Line ($\tilde{t}=1.0$)")
 
     ax.set_xlabel(xlabel, fontsize=11)
-    ax.set_ylabel(r"Scaled Probability Density $\tilde{P}$", fontsize=11)
+    if density:
+        ax.set_ylabel(r"Scaled Probability Density $\tilde{P}$", fontsize=11)
+    else:
+        ax.set_ylabel(f"Particles per bin (width {bin_width:g})", fontsize=11)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title(title, fontsize=12)
     ax.set_xlim(0.0, max_scaled_t)
     ax.grid(True, linestyle="--", alpha=0.5)
