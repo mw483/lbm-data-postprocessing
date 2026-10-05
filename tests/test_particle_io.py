@@ -70,3 +70,25 @@ def test_map_loader(tmp_path):
     elev, nx, ny = load_lbm_map(tmp_path / "building.dat")
     assert (nx, ny) == (3, 2)
     assert elev[1, 1] == 16
+
+
+def test_sensor_cache_builds_once_and_matches_csv(tmp_path):
+    from data_loaders.sensor_cache import load_sensor_subset, sensor_cache_path, trajectories_from_frame
+
+    run_dir = tmp_path / "out" / "run1" / "sensor_8x8x8" / "1200-1800_sensor_density"
+    run_dir.mkdir(parents=True)
+    write_capsule(run_dir / "sensor_hit_ids.txt")
+    write_traj(run_dir / "target_trajectories.csv")
+    paths = {"particle_outputs": tmp_path / "out", "cache": tmp_path / "cache"}
+
+    df, hits = load_sensor_subset(paths, "run1", 1)
+    assert sensor_cache_path(paths, "run1", 1).exists()
+    assert set(df["id"].to_list()) == {10001, 20002}
+    assert hits["id"].to_list() == [10001, 20002]
+
+    (run_dir / "target_trajectories.csv").unlink()        # second call must not need the CSV
+    df2, _ = load_sensor_subset(paths, "run1", 1)
+    assert df2.equals(df)
+
+    traj = trajectories_from_frame(df2)
+    np.testing.assert_array_equal(traj[10001][:, 0], [1, 2])
