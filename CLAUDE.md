@@ -1,6 +1,6 @@
 # Working agreement
 
-**Never assume.** If anything is unclear about the repository, the physics, the run settings or the purpose of the research, ask Mikael instead of guessing. Base statements on what the code, the data and Mikael say, and mark anything not verified.
+**Ask, don't assume.** If anything about the repository or the purpose of the research is unclear, ask Mikael instead of assuming. The research works from facts in the data and statistics on them, not from assumptions.
 
 Follow this workflow for every change to this repository:
 
