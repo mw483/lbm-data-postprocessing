@@ -236,10 +236,31 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
     """
     Bins Lagrangian trajectories into an 8x8x8m 3D grid and extracts nested
     continuous 3D isopleth shells (enclosed probability/mass envelopes).
+    Opens an interactive window ('s' saves a screenshot).
+    """
+    plotter = pv.Plotter(off_screen=False)
+    if not add_density_isopleths(plotter, trajectories, sensor_center, sensor_size, map_filepath, dx,
+                                 voxel_res, sigma, z_max, density_mode, cumulative_levels,
+                                 manual_thresholds, shell_opacity, crop_approach, x_start):
+        plotter.close()
+        return
+
+    # Screenshot callback ('s' key)
+    add_snapshot_key(plotter, save_path)
+    print("Interactive window opened. Press 's' to save a screenshot.")
+    plotter.show()
+
+
+def add_density_isopleths(plotter, trajectories, sensor_center, sensor_size, map_filepath=None, dx=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", cumulative_levels=[0.50, 0.80, 0.95], manual_thresholds=None, shell_opacity=0.45, crop_approach=True, x_start=3072.0, bar_title=None):
+    """
+    Draws the isopleth scene (buildings, shells, sensor box, grid) into the active
+    renderer of `plotter`, so it also works in one subplot of a side-by-side plotter.
+    bar_title overrides the scalar-bar title (needed when two subplots share a plotter).
+    Returns False when there is nothing to draw.
     """
     if not trajectories:
        print("[ERROR] No trajectories available.")
-       return
+       return False
 
     (raw_hist, total_samples, elevation_mat, nx_map, ny_map,
      x_domain_max, y_domain_max) = _bin_trajectories(trajectories, map_filepath, dx, voxel_res, z_max)
@@ -292,11 +313,9 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
         contours = point_grid.contour(isosurfaces=isosurface_values, scalars="Density")
     except Exception as e:
         print(f"[ERROR] Failed to extract contours: {e}")
-        return
+        return False
 
     # --- 7. Assemble Scene ---
-    plotter = pv.Plotter(off_screen=False)
-
     # A. Add Buildings & Ground Plane
     if elevation_mat is not None:
         add_voxel_buildings(plotter, elevation_mat, nx_map, ny_map, dx, opacity=1.0,
@@ -315,7 +334,7 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
         opacity=shell_opacity,
         smooth_shading=True,
         show_scalar_bar=True,
-        scalar_bar_args={"title": unit_title, "fmt": "%.2e"},
+        scalar_bar_args={"title": bar_title or unit_title, "fmt": "%.2e"},
         label="Contributing Isopleths"
     )
 
@@ -327,11 +346,7 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
     plotter.add_axes()
     show_iso_grid(plotter)
     plotter.add_legend()
-
-    # Screenshot callback ('s' key)
-    add_snapshot_key(plotter, save_path)
-    print("Interactive window opened. Press 's' to save a screenshot.")
-    plotter.show()
+    return True
 
 
 def plot_particles_with_velocity(
@@ -351,27 +366,27 @@ def plot_particles_with_velocity(
     """
     Renders 3D particles colored by instantaneous velocity components or kinetic energy.
     Supported scalar_field values: 'u', 'v', 'w', 'vel_mag', 'tke_sgs', 'w_total'
+    Opens an interactive window ('s' saves a screenshot).
     """
-    if particle_df is None or len(particle_df) == 0:
-        print("[ERROR] No particle data provided to plot.")
+    plotter = pv.Plotter(off_screen=False)
+    n_points = add_particles_with_velocity(
+        plotter, particle_df, sensor_center, sensor_size, scalar_field, display_mode,
+        point_size, stride, map_filepath, dx, crop_approach, x_start)
+    if not n_points:
+        plotter.close()
         return
 
-    #1. Subsample points if needed for interactive performance
-    if stride > 1:
-        particle_df = particle_df.gather_every(stride)
+    add_snapshot_key(plotter, save_path)
+    print(f"Interactive window opened. Rendering {n_points:,} particle points. Press 's' to capture view.")
+    plotter.show()
 
-    if crop_approach:
-        particle_df = particle_df.filter(pl.col("x") >= x_start)
 
-    # 2. Extract coordinates
-    pts = np.column_stack((
-        particle_df["x"].to_numpy(),
-        particle_df["y"].to_numpy(),
-        particle_df["z"].to_numpy()
-    ))
-
-    # 3. Compute requested scalar field and select colormap
-    # u, v, w = resolved (grid-scale); *_total = what the particle moves with (resolved + SGS)
+def velocity_scalars(particle_df, scalar_field):
+    """
+    Returns (scalars, cmap, bar_title, clim) for one scalar_field of a velocity frame
+    from load_trajectories_with_velocities.
+    u, v, w = resolved (grid-scale); *_total = what the particle moves with (resolved + SGS).
+    """
     u = particle_df["u_res"].to_numpy()
     v = particle_df["v_res"].to_numpy()
     w = particle_df["w_res"].to_numpy()
@@ -417,6 +432,53 @@ def plot_particles_with_velocity(
         clim = [0.0, np.percentile(scalars, 99)]
     else:
         raise ValueError(f"Unknown scalar_field: {scalar_field}")
+    return scalars, cmap, bar_title, clim
+
+
+def add_particles_with_velocity(
+    plotter,
+    particle_df,
+    sensor_center,
+    sensor_size,
+    scalar_field="vel_mag",
+    display_mode="points",
+    point_size=4.0,
+    stride=1,
+    map_filepath=None,
+    dx=2.0,
+    crop_approach=False,
+    x_start=3072.0,
+    clim=None,
+    bar_title=None
+):
+    """
+    Draws the velocity-coloured particle scene into the active renderer of `plotter`,
+    so it also works in one subplot of a side-by-side plotter.
+    clim / bar_title override the colour range and scalar-bar title (e.g. one shared
+    range for two cases). Returns the number of points drawn (0 = nothing drawn).
+    """
+    if particle_df is None or len(particle_df) == 0:
+        print("[ERROR] No particle data provided to plot.")
+        return 0
+
+    #1. Subsample points if needed for interactive performance
+    if stride > 1:
+        particle_df = particle_df.gather_every(stride)
+
+    if crop_approach:
+        particle_df = particle_df.filter(pl.col("x") >= x_start)
+
+    # 2. Extract coordinates
+    pts = np.column_stack((
+        particle_df["x"].to_numpy(),
+        particle_df["y"].to_numpy(),
+        particle_df["z"].to_numpy()
+    ))
+
+    # 3. Compute requested scalar field and select colormap
+    scalars, cmap, default_title, default_clim = velocity_scalars(particle_df, scalar_field)
+    clim = clim if clim is not None else default_clim
+    bar_title = bar_title or default_title
 
     # 4. Construct PyVista PolyData
     poly = pv.PolyData(pts)
@@ -436,7 +498,6 @@ def plot_particles_with_velocity(
         poly.lines = np.array(line_cells)
 
     # 5. Setup Plotter Scene
-    plotter = pv.Plotter(off_screen=False)
     plotter.set_background("white")
 
     # Add Particle Geometry
@@ -479,7 +540,4 @@ def plot_particles_with_velocity(
 
     # 7. Viewport & Screenshot Control
     show_iso_grid(plotter)
-
-    add_snapshot_key(plotter, save_path)
-    print(f"Interactive window opened. Rendering {poly.n_points:,} particle points. Press 's' to capture view.")
-    plotter.show()
+    return poly.n_points
