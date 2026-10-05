@@ -1,5 +1,7 @@
 # Working agreement
 
+**Ask, don't assume.** If anything about the repository or the purpose of the research is unclear, ask Mikael instead of assuming. The research works from facts in the data and statistics on them, not from assumptions.
+
 Follow this workflow for every change to this repository:
 
 1. **Discuss and plan first.** Understand the current state, let Mikael explain the goal, confirm the details, and present a plan for the change.
