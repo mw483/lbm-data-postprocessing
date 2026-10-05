@@ -1,5 +1,7 @@
 # Working agreement
 
+**Never assume.** If anything is unclear about the repository, the physics, the run settings or the purpose of the research, ask Mikael instead of guessing. Base statements on what the code, the data and Mikael say, and mark anything not verified.
+
 Follow this workflow for every change to this repository:
 
 1. **Discuss and plan first.** Understand the current state, let Mikael explain the goal, confirm the details, and present a plan for the change.
