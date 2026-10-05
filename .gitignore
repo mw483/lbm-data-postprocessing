@@ -19,3 +19,7 @@ desktop.ini
 
 # Office lock files
 ~$*
+
+# Per-machine settings and caches
+local_paths.yaml
+cache/

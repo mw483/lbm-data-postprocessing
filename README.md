@@ -10,6 +10,14 @@ python -m venv .venv            # or use an existing conda env
 pip install -e .[dev]
 ```
 
+Then tell the scripts where the data is on this machine:
+
+```sh
+copy local_paths.example.yaml local_paths.yaml   # cp on Linux/macOS
+```
+
+Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-processing outputs (lab PC: `D:/lbm_results/...`; laptop: the rclone mount of the TSUBAME folder), the map folder, a local cache folder and the figures folder.
+
 `pip install -e .` makes `data_loaders`, `physics_core` and `plotting_core` importable from anywhere. The `-e` (editable) flag means edits to the library take effect immediately; there is no reinstall step.
 
 ## Layout

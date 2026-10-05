@@ -1,17 +1,16 @@
-import os
-
-
+from data_loaders.local_paths import load_local_paths, sensor_output_dir
 from data_loaders.particle_io import load_streamed_trajectories
 from plotting_core.particle_3d_plots import plot_density_isopleths_with_sensor
 
 def main():
     # --- Configuration ---
-    # map_dir = r"Z:\map\map_cube_16m_approach.dat"
-    # time_capsule_file = r"Z:\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\sensor_hit_ids.txt"
-    # trajectory_csv = r"Z:\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\target_trajectories.csv"
-    map_dir = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\map\map_flat_16m_approach.dat"
-    time_capsule_file = r"D:\lbm_results\Particle_PostProcess_Outputs\20260630_particle_flat_16mapproach\sensor_8x8x8\1200-1800_sensor_density\sensor_hit_ids.txt"
-    trajectory_csv = r"D:\lbm_results\Particle_PostProcess_Outputs\20260630_particle_flat_16mapproach\sensor_8x8x8\1200-1800_sensor_density\target_trajectories.csv"
+    paths = load_local_paths()   # per-machine folders, see local_paths.example.yaml
+    run = "20260630_particle_flat_16mapproach"   # or "20260803_particle_cube_16mapproach"
+    map_file = "map_flat_16m_approach.dat"       # or "map_cube_16m_approach.dat"
+
+    map_dir = str(paths["maps"] / map_file)
+    time_capsule_file = sensor_output_dir(paths, run) / "sensor_hit_ids.txt"
+    trajectory_csv = sensor_output_dir(paths, run) / "target_trajectories.csv"
 
     dx = 2.0
     target_sensor_id = 4
@@ -21,10 +20,8 @@ def main():
     sensor_folder = f"sensor_{sensor_size[0]}x{sensor_size[1]}x{sensor_size[2]}"
     loc_folder = f"loc_{sensor_center[0]}_{sensor_center[1]}_{sensor_center[2]}"
     
-    output_path = os.path.join(
-        "../figures", "20260630_particle_flat_16mapproach_isopleths", sensor_folder, loc_folder,
-        f"isopleths_sensor_{target_sensor_id}.png"
-    )
+    output_path = str(paths["figures"] / f"{run}_isopleths" / sensor_folder / loc_folder /
+                      f"isopleths_sensor_{target_sensor_id}.png")
 
     # --- Load Data ---
     trajectories = load_streamed_trajectories(trajectory_csv, time_capsule_file, target_sensor_id)

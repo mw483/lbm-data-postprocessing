@@ -1,0 +1,18 @@
+# Per-machine data folders for the scripts.
+# Copy this file to local_paths.yaml (git-ignored) in the repo root and edit it for this machine.
+# Use forward slashes, also on Windows. Relative paths are taken from the repo root.
+
+# Folder holding the C++ post-processing outputs, one subfolder per run
+# (e.g. 20260630_particle_flat_16mapproach/sensor_8x8x8/1200-1800_sensor_density/).
+#   Lab PC:  D:/lbm_results/Particle_PostProcess_Outputs
+#   Laptop:  the rclone mount of TSUBAME /gs/bs/tga-lbmcity/mikael/LBM_particle_test/Particle_PostProcess_Outputs
+particle_outputs: D:/lbm_results/Particle_PostProcess_Outputs
+
+# Folder holding the map .dat files (repo 1's map/ folder).
+maps: C:/Users/Mikael Wijaya/Documents/GitHub/lbm-cuda-project/map
+
+# Local, fast disk for cached per-sensor subsets (Parquet). Created when needed.
+cache: cache
+
+# Where scripts save figures.
+figures: figures

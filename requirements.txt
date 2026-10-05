@@ -6,4 +6,5 @@ polars
 scipy
 matplotlib
 pyvista
+pyyaml
 pytest

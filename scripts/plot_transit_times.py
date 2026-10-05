@@ -1,10 +1,9 @@
 import os
 from pathlib import Path
-# Add repo root to Python path
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 import polars as pl
 
+from data_loaders.local_paths import load_local_paths, sensor_output_dir
 from data_loaders.particle_io import load_hit_table
 from physics_core.particle_analysis import compute_transit_times
 from plotting_core.velocity_analysis_plots import plot_transit_time_distribution
@@ -20,24 +19,18 @@ def main():
     sensor_x, sensor_y, sensor_z = 3672.0, 128.0, 90.0
     sensor_size = (8.0, 8.0, 8.0)   # SIZE_SENSOR_DENSITY used by the C++ run (sensor_8x8x8)
 
-    # Output path
+    paths = load_local_paths()   # per-machine folders, see local_paths.example.yaml
+    output_figure = paths["figures"] / "comparative" / f"ttd_flat_vs_cube_{int(sensor_x)}_{int(sensor_y)}_{int(sensor_z)}.png"
 
-    output_figure = REPO_ROOT / "figures" / "comparative" / f"ttd_flat_vs_cube_{int(sensor_x)}_{int(sensor_y)}_{int(sensor_z)}.png"
-
-    # Define runs to compare
-    # sensor_id: ID corresponding to sensor location in sensor_hit_ids.txt
+    # Define runs to compare (folder names under particle_outputs)
     RUNS = {
-        "Flat Case": {
-            "csv": Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260630_particle_flat_16mapproach\sensor_8x8x8\1200-1800_sensor_density\target_trajectories.csv"),
-            "capsule": Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260630_particle_flat_16mapproach\sensor_8x8x8\1200-1800_sensor_density\sensor_hit_ids.txt"),
-            "target_coords": (sensor_x, sensor_y, sensor_z)
-        },
-        "Cube Array": {
-            "csv": Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\target_trajectories.csv"),
-            "capsule": Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\sensor_hit_ids.txt"),
-            "target_coords": (sensor_x, sensor_y, sensor_z)
-        }
+        "Flat Case": {"run": "20260630_particle_flat_16mapproach", "target_coords": (sensor_x, sensor_y, sensor_z)},
+        "Cube Array": {"run": "20260803_particle_cube_16mapproach", "target_coords": (sensor_x, sensor_y, sensor_z)},
     }
+    for config in RUNS.values():
+        run_dir = sensor_output_dir(paths, config["run"])
+        config["csv"] = run_dir / "target_trajectories.csv"
+        config["capsule"] = run_dir / "sensor_hit_ids.txt"
 
     # =========================================================================
     # Data Processing Pipeline
