@@ -19,6 +19,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest"]
+# MP4 export for scripts/demo_presentation.py --record
+video = ["imageio", "imageio-ffmpeg"]
 
 [tool.setuptools]
 packages = ["data_loaders", "physics_core", "plotting_core"]

@@ -34,6 +34,16 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 
 ## Running
 
+### Presentation demo (2026-10-07)
+
+```sh
+pip install -e .[video]                                  # once, for the MP4 backup
+python scripts/demo_presentation.py --record             # once before the talk: builds the cache, writes MP4/PNG backups
+python scripts/demo_presentation.py                      # live: isopleths -> velocity lines -> TTD
+```
+
+Flat and cube array side by side, one shared camera. Close a window to go to the next stage. Settings are at the top of the script.
+
 ```sh
 python scripts/analyze_particle_statistics.py
 pytest                      # run the checks
