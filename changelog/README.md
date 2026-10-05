@@ -8,6 +8,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 |---|---|---|---|
 | 2026-10-01 | [2026-10-01_cleanup-structure.md](2026-10-01_cleanup-structure.md) | Branch `cleanup/structure`: hygiene, installable library, archive, particle velocity-unit fix, shared wind and PyVista code, pytest checks | `5f32002` `1b48476` `575d2e8` `c6a3cfc` `20493e6` `2b7e95b` `37411b4` `87262d1` |
 | 2026-10-05 | [2026-10-05_ask-dont-assume.md](2026-10-05_ask-dont-assume.md) | CLAUDE.md: new "Ask, don't assume" rule above the workflow steps; no code changed | `ddaee2a` |
+| 2026-10-05 | [2026-10-05_presentation-scripts.md](2026-10-05_presentation-scripts.md) | Branch `analysis/presentation-oct`: transit time to first sensor entry (bug fix), raw-count TTDs, per-machine `local_paths.yaml`, Parquet cache, side-by-side live demo for the 2026-10-07 talk | `4fea15c` `588fadb` `3490c20` `af2a382` `53f0b81` |
 
 ## Glossary
 
