@@ -88,3 +88,24 @@ def virtual_tower(fields, x, dx=2.0, dz=2.0):
     if all(k in fields for k in ("uw", "um", "wm")):
         profile["u_star"] = calc_u_star(profile["uw"], profile["um"], profile["wm"])
     return profile
+
+
+def mean_wind_profile(fields, x_min, dx=2.0, dz=2.0):
+    """
+    Eulerian mean and standard deviation of u, v, w against height, averaged over
+    x >= x_min [m] from y-averaged XZ fields (load_xz_yav with um, vm, wm, uu, vv, ww;
+    uu etc. are raw second moments, so variance = uu - um^2).
+
+    Returns {"z": heights [m] (z_idx * dz), "u_mean", "v_mean", "w_mean", "u_std", "v_std", "w_std"}.
+    *_mean is the x-average of the time/y mean; *_std is the square root of the x-average of the
+    local variance (the spread of the mean across x is not included).
+    Note: cells inside buildings are averaged in as they are stored in the file.
+    """
+    x0 = int(x_min / dx)
+    profile = {"z": np.arange(fields["um"].shape[0]) * dz}
+    for c in ("u", "v", "w"):
+        mean = fields[f"{c}m"][:, x0:]
+        second = fields[f"{c}{c}"][:, x0:]
+        profile[f"{c}_mean"] = np.nanmean(mean, axis=1)
+        profile[f"{c}_std"] = np.sqrt(np.nanmean(calc_reynolds_stress(second, mean), axis=1))
+    return profile

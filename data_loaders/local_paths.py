@@ -11,10 +11,14 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 KEYS = ("particle_outputs", "maps", "cache", "figures")
+OPTIONAL_KEYS = ("wind_outputs",)   # folder holding the solver Output folders (<date>_output_<case>)
 
 
 def load_local_paths(path=None):
-    """Returns {key: Path} for the keys in KEYS. Relative entries are taken from the repo root."""
+    """
+    Returns {key: Path} for the keys in KEYS, plus any OPTIONAL_KEYS that are set.
+    Relative entries are taken from the repo root.
+    """
     path = Path(path or os.environ.get("LBM_LOCAL_PATHS") or REPO_ROOT / "local_paths.yaml")
     if not path.exists():
         raise FileNotFoundError(
@@ -29,7 +33,7 @@ def load_local_paths(path=None):
         raise KeyError(f"[ERROR] {path} has no entry for: {', '.join(missing)}")
 
     paths = {}
-    for key in KEYS:
+    for key in KEYS + tuple(k for k in OPTIONAL_KEYS if raw.get(k)):
         p = Path(os.path.expanduser(str(raw[key])))
         paths[key] = p if p.is_absolute() else REPO_ROOT / p
     return paths

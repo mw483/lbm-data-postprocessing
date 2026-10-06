@@ -150,3 +150,69 @@ def normalize_transit_distribution(
         raise ValueError(f"Unknown normalization method: {method}")
 
     return scaled_t, xlabel
+
+def until_arrival(df: pl.DataFrame, transit: pl.DataFrame) -> pl.DataFrame:
+    """
+    Keeps each particle's records from its first record up to and including its arrival
+    step at the sensor (transit from compute_transit_times for ONE sensor). Particles
+    without an arrival are dropped.
+    """
+    arrival = transit.select(["id", "step_arrival"]).unique(subset="id", keep="first")
+    return (
+        df.join(arrival, on="id", how="inner")
+        .filter(pl.col("step") <= pl.col("step_arrival"))
+        .drop("step_arrival")
+    )
+
+
+def velocity_stats_by_height(
+    df: pl.DataFrame,
+    components=("u_res", "v_res", "w_res"),
+    z_bin: float = 4.0,
+    min_count: int = 1,
+) -> pl.DataFrame:
+    """
+    Particle-sampled statistics of each velocity component in height bins of z_bin metres.
+    Every record (particle x output step) counts once, so a bin's statistics are weighted
+    by how long particles stayed there.
+
+    Returns one row per bin: z_low, z_mid, n, then <comp>_mean, _median, _std, _var,
+    _p10, _p90 for every component. Bins with fewer than min_count records are dropped.
+    """
+    aggs = [pl.len().alias("n")]
+    for c in components:
+        aggs += [
+            pl.col(c).mean().alias(f"{c}_mean"),
+            pl.col(c).median().alias(f"{c}_median"),
+            pl.col(c).std().alias(f"{c}_std"),
+            pl.col(c).var().alias(f"{c}_var"),
+            pl.col(c).quantile(0.10, "linear").alias(f"{c}_p10"),
+            pl.col(c).quantile(0.90, "linear").alias(f"{c}_p90"),
+        ]
+    return (
+        df.with_columns(((pl.col("z") / z_bin).floor() * z_bin).alias("z_low"))
+        .group_by("z_low")
+        .agg(aggs)
+        .filter(pl.col("n") >= min_count)
+        .with_columns((pl.col("z_low") + z_bin / 2.0).alias("z_mid"))
+        .sort("z_low")
+        .select(["z_low", "z_mid", "n", *[f"{c}_{s}" for c in components
+                                          for s in ("mean", "median", "std", "var", "p10", "p90")]])
+    )
+
+
+def transit_time_summary(delta_t: np.ndarray) -> dict:
+    """N, mean, median, std, 10th/90th percentiles, min and max of transit times [s]."""
+    delta_t = np.asarray(delta_t, dtype=float)
+    if len(delta_t) == 0:
+        return {"n": 0}
+    return {
+        "n": int(len(delta_t)),
+        "mean_s": float(np.mean(delta_t)),
+        "median_s": float(np.median(delta_t)),
+        "std_s": float(np.std(delta_t, ddof=1)) if len(delta_t) > 1 else float("nan"),
+        "p10_s": float(np.percentile(delta_t, 10)),
+        "p90_s": float(np.percentile(delta_t, 90)),
+        "min_s": float(np.min(delta_t)),
+        "max_s": float(np.max(delta_t)),
+    }

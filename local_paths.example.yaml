@@ -16,3 +16,9 @@ cache: cache
 
 # Where scripts save figures.
 figures: figures
+
+# Optional: folder holding the solver wind outputs, one subfolder per run
+# (e.g. 20260630_output_flat_16mapproach/ with xz_yav_*.csv). Only needed for the
+# Eulerian wind overlay in plot_particle_velocity_profiles.py.
+#   Lab PC:  Z:/   (repo 1 runs on TSUBAME)
+# wind_outputs: Z:/
