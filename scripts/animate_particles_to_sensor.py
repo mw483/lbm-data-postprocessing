@@ -41,7 +41,7 @@ UNTIL_ARRIVAL = False          # True: hide each particle after it reaches the s
 COLOR_BY = "w_res"             # None: one colour per case
 FRAME_STRIDE = 1               # draw every n-th output second
 FPS = 20                       # MP4 frame rate (600 s at stride 1 -> 30 s of video)
-POINT_SIZE = 6.0
+POINT_SIZE = 5.0
 WINDOW_SIZE = (1800, 850)
 
 
