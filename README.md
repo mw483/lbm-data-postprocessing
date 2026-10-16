@@ -47,12 +47,13 @@ Flat and cube array side by side, one shared camera. Close a window to go to the
 ### 3D map viewer (2026-10-16)
 
 ```sh
-python scripts/view_map_3d.py <map folder>                                       # whole map, auto coarsened
-python scripts/view_map_3d.py <map folder> --crop 4300 4900 1000 1500 --stride 1 # cells i0 i1 j0 j1, full 2 m
-python scripts/view_map_3d.py <map folder> ... --sources <particle_position.txt>  # overlay sources
+python scripts/view_map_3d.py --case flat_512x128x1024                          # an LBM-city case, auto coarsened
+python scripts/view_map_3d.py --case flat_512x128x1024 --sources                 # + the case's particle_position.txt
+python scripts/view_map_3d.py <map folder> --crop 4300 4900 1000 1500 --stride 1 # any map folder; cells i0 i1 j0 j1, full 2 m
+python scripts/view_map_3d.py <map folder> --sources <particle_position.txt>     # overlay a source file
 ```
 
-The map folder holds `topography.dat`, `building.dat` and `vegetation.dat` (a path, or a subfolder of `maps` in `local_paths.yaml`). Press `p` over a point to print x, y, cell i, j and the heights there; `s` saves a screenshot to `<figures>/map_3d/`. Coarsened views widen buildings and trees, so pick sources on a `--stride 1` crop. `--save view.png` writes a PNG without a window.
+`--case` reads `<lbm_cases>/<case>/map/` (set `lbm_cases` in `local_paths.yaml` to an LBM-city `cases` folder, branch `mikael/cases`). A map folder is any folder with `topography.dat`, `building.dat` and `vegetation.dat`, for maps that are not a case yet. Press `p` over a point to print x, y, cell i, j and the heights there; `s` saves a screenshot to `<figures>/map_3d/`. Coarsened views widen buildings and trees, so pick sources on a `--stride 1` crop. `--save view.png` writes a PNG without a window.
 
 ### Solver statistics, scalar2 and later (2026-10-16)
 

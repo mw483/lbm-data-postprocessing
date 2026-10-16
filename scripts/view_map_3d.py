@@ -3,15 +3,16 @@
 columns (one per cell, as the solver sees them), trees as green columns, and
 optionally the sources of a particle_position.txt as red points.
 
-MAP_SET is a folder holding topography.dat, building.dat and vegetation.dat:
-either a path, or a subfolder name under `maps` in local_paths.yaml.
+The map set is either an LBM-city case (--case NAME reads
+<lbm_cases>/NAME/map/ from local_paths.yaml) or any folder holding
+topography.dat, building.dat and vegetation.dat (e.g. a map that is not a case yet).
 Coordinates stay global (metres from the map origin) when cropping.
 
-    python scripts/view_map_3d.py MAP_SET                                # whole map, auto coarsened
-    python scripts/view_map_3d.py MAP_SET --crop 4300 4900 1000 1500 --stride 1
-    python scripts/view_map_3d.py MAP_SET --crop 4300 4900 1000 1500 --stride 1 \\
-        --sources MAP_SET/particle_position/particle_position.txt
-    python scripts/view_map_3d.py MAP_SET --save view.png                # PNG, no window
+    python scripts/view_map_3d.py --case flat_512x128x1024                       # whole map, auto coarsened
+    python scripts/view_map_3d.py --case flat_512x128x1024 --sources              # + the case's particle_position.txt
+    python scripts/view_map_3d.py FOLDER --crop 4300 4900 1000 1500 --stride 1    # any map folder, cells i0 i1 j0 j1
+    python scripts/view_map_3d.py FOLDER --sources path/to/particle_position.txt
+    python scripts/view_map_3d.py --case NAME --save view.png                     # PNG, no window
 
 Keys in the window: 'p' over a point prints x, y, cell i, j and the ground,
 building and tree heights at that cell; 's' saves a numbered screenshot to
@@ -25,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import pyvista as pv
 
-from data_loaders.local_paths import load_local_paths
+from data_loaders.local_paths import case_map_dir, case_sources_file, load_local_paths
 from data_loaders.map_io import load_map_set, load_source_xyz
 from plotting_core.map_3d import (auto_stride, classify_cells, crop_and_coarsen,
                                   map_set_meshes, sources_in_box)
@@ -42,16 +43,22 @@ SOURCE_COLOR = "red"
 WINDOW_SIZE = (1600, 1000)
 
 
-def resolve_map_set(name):
-    """A path as given, or a subfolder of `maps` from local_paths.yaml."""
-    p = Path(name)
-    if p.is_dir():
-        return p
-    paths = load_local_paths()
-    p = paths["maps"] / name
-    if not p.is_dir():
-        raise FileNotFoundError(f"[ERROR] {name} is neither a folder nor a subfolder of {paths['maps']}")
-    return p
+def resolve_inputs(folder, case, sources):
+    """(map folder, label, sources file or None) from the command line."""
+    if case:
+        paths = load_local_paths()
+        map_dir = case_map_dir(paths, case)
+        if sources is True:
+            sources = case_sources_file(paths, case)
+        label = case
+    else:
+        map_dir = Path(folder)
+        if sources is True:
+            raise SystemExit("[ERROR] --sources without a file needs --case")
+        label = map_dir.resolve().name
+    if not map_dir.is_dir():
+        raise FileNotFoundError(f"[ERROR] map folder {map_dir} not found")
+    return map_dir, label, sources
 
 
 def figures_dir():
@@ -86,21 +93,25 @@ def pick_printer(full_maps, dx):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("map_set", help="folder with topography.dat, building.dat, vegetation.dat")
+    ap.add_argument("folder", nargs="?", help="folder with topography.dat, building.dat, vegetation.dat")
+    ap.add_argument("--case", help="LBM-city case name; reads <lbm_cases>/<case>/map")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("I0", "I1", "J0", "J1"),
                     help="cell window, end exclusive")
     ap.add_argument("--stride", type=int, default=0, help="coarsen by N x N cells (default: auto)")
     ap.add_argument("--zscale", type=float, default=1.0, help="vertical exaggeration")
-    ap.add_argument("--sources", help="particle_position.txt to overlay (x y z in m)")
+    ap.add_argument("--sources", nargs="?", const=True,
+                    help="particle_position.txt to overlay (x y z in m); no value = the case's own file")
     ap.add_argument("--max-sources", type=int, default=200_000)
     ap.add_argument("--no-trees", action="store_true")
     ap.add_argument("--tree-opacity", type=float, default=0.8)
     ap.add_argument("--save", help="write this PNG instead of opening a window")
     args = ap.parse_args()
 
-    folder = resolve_map_set(args.map_set)
+    if bool(args.folder) == bool(args.case):
+        ap.error("give either a map folder or --case, not both")
+    folder, label, sources = resolve_inputs(args.folder, args.case, args.sources)
     full = load_map_set(folder)
-    describe(full, f"Map {folder.name}")
+    describe(full, f"Map {label}")
 
     ny, nx = full["topo"].shape
     i0, i1, j0, j1 = args.crop or (0, nx, 0, ny)
@@ -119,8 +130,9 @@ def main():
         plotter.add_mesh(meshes["buildings"], color=BUILDING_COLOR, label="Buildings")
     if meshes["trees"] is not None and not args.no_trees:
         plotter.add_mesh(meshes["trees"], color=TREE_COLOR, opacity=args.tree_opacity, label="Trees")
-    if args.sources:
-        xyz = load_source_xyz(args.sources)
+    if sources:
+        print(f"Reading sources from {sources} ...")
+        xyz = load_source_xyz(sources)
         print(f"Sources in file: {len(xyz):,}; x {xyz[:, 0].min():.1f}-{xyz[:, 0].max():.1f} m, "
               f"y {xyz[:, 1].min():.1f}-{xyz[:, 1].max():.1f} m, z {xyz[:, 2].min():.1f}-{xyz[:, 2].max():.1f} m")
         ny_s, nx_s = maps["topo"].shape
@@ -139,7 +151,7 @@ def main():
         return
     plotter.enable_point_picking(callback=pick_printer(full, DX), show_message="Press P to pick a point",
                                  show_point=True, use_picker=True)
-    add_snapshot_key(plotter, str(figures_dir() / f"{folder.name}.png"))
+    add_snapshot_key(plotter, str(figures_dir() / f"{label}.png"))
     plotter.show()
 
 
