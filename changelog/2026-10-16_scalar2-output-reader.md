@@ -1,8 +1,8 @@
 # Reader for scalar2 solver CSV statistics, inventory and profile scripts (2026-10-16)
 
-**Commits:** `b928177`, `cb29aee` (range `1773e52..HEAD`, branch `analysis/scalar2-outputs`, branched from `analysis/presentation-oct`)
-**Goal:** Python analysis of the CSV statistics that Run 3 (LBM-city scalar2, `flat_512x128x1024`, convective, output folder `20261011_output_flat_512x128x1024_scalar2`) writes.
-**Result:** `tests/test_lbm_output.py` (11 tests) passes. Both scripts ran on a synthetic 4-rank run folder written in the solver formats, including a two-case comparison. **Nothing was run on real Run 3 data** (the data is on the lab PC / TSUBAME).
+**Commits:** `b928177`, `cb29aee`, `e279e5e` (range `1773e52..HEAD`, branch `analysis/scalar2-outputs`, branched from `analysis/presentation-oct`)
+**Goal:** Python analysis of the CSV statistics that Run 3 (LBM-city scalar2, `flat_512x128x1024`, convective, run `flat_512x128x1024/20261011_scalar2`; the first two commits called its folder `20261011_output_flat_512x128x1024_scalar2`, see commit `e279e5e`) writes.
+**Result:** `tests/test_lbm_output.py` (11 tests) passes. Both scripts ran on a synthetic 4-rank run folder written in the solver formats, including a two-case comparison. After `e279e5e`: pytest 38 passed, 1 failed (the known polars failure below), and both scripts re-ran OK on a synthetic run in the new layout (`lbm/flat_512x128x1024/20261011_scalar2/output`). **Nothing was run on real Run 3 data** (the data is on the lab PC / TSUBAME).
 
 ---
 
@@ -20,11 +20,11 @@ Format facts the reader relies on (from the brief; the first and the stitching r
 
 - Scope: reader + moments module + first two scripts.
 - Branch from `analysis/presentation-oct`.
-- CSV run folders sit under `D:\lbm_results\`, one folder per run (`wind_outputs: D:/lbm_results`).
+- CSV run folders sit under `D:\lbm_results\`, one folder per run (`wind_outputs: D:/lbm_results`). **Replaced on 2026-10-16 by commit `e279e5e`**: runs are now `<case>/<date>_<tag>` under `lbm_results`, see the section below.
 - `xy_ag_*` files are skipped for flat runs: the AGL planes repeat the xy planes on flat ground.
 - New module `data_loaders/lbm_output.py` instead of extending `lbm_parsers.py`. The old `XYStackedParser` needs `ny_rows` by hand and `XZMatrixParser` breaks on labelled xz/yz files. The old parsers are untouched because existing scripts use them.
 - `physics_core/moments.py` does not clip negative variances (`turbulence.py` does), so round-off problems stay visible as NaN sigma or skewness.
-- The neutral twin case is in `CASES` as a commented line. Mikael fills in the folder name after it has run.
+- The neutral twin case is in `CASES` as a commented line. Mikael fills in the folder name after it has run. (Placeholder text changed in `e279e5e`.)
 
 ## Commit `b928177`: reader and central moments
 
@@ -43,14 +43,40 @@ Format facts the reader relies on (from the brief; the first and the stitching r
 | `scripts/inventory_lbm_output.py` (new) | Per case: for each variable, step count, first and last step, min and max rank count against `ncpu` in `header.txt`. Optionally (`CHECK_SHAPES`) loads the newest step of every plane variable and checks the stitched shape against the domain size from the header. Skips `xy_ag_` (`SKIP_PREFIXES`). Writes `inventory_<case>.csv`. | Find missing files before analysis. |
 | `scripts/plot_profiles_by_window.py` (new) | Per case, loads each `prof` step, `domain_profile`, `profile_moments`. Plots U, sigma_w, TKE, S_w, theta, w'theta' per 200 s window (darker = later). With more than one case, plots the last common window of all cases together. Writes the per-window table as CSV. `ZMAX = 2048`. | See when profiles stop changing; compare convective and neutral. |
 | `plotting_core/profile_plots.py:plot_profile_panels` | New function: one panel per quantity, shared height axis, one line per profile, optional colours and styles. | Used by the profile script. |
-| `local_paths.example.yaml` | Comment on `wind_outputs` rewritten; example `D:/lbm_results`. | Document the run-folder layout. |
-| `README.md` | New section "Solver statistics, scalar2 and later (2026-10-16)". | How to run the scripts. |
+| `local_paths.example.yaml` | Comment on `wind_outputs` rewritten; example `D:/lbm_results`. (Superseded by `e279e5e`.) | Document the run-folder layout. |
+| `README.md` | New section "Solver statistics, scalar2 and later (2026-10-16)". | How to run the scripts. (Setup sentence revised by `e279e5e`.) |
+
+## Commit `e279e5e`: run folders are `<case>/<date>_<tag>/{output,particle_postprocess}`
+
+Revises the run-folder statements in `b928177` / `cb29aee` above. Mikael asked on 2026-10-16 for a simple change to the new data layout in `D:\lbm_results`:
+
+- wind CSV: `D:\lbm_results\flat_512x128x1024\20261011_scalar2\output`
+- post-processed particles (e.g. particle density CSV): `D:\lbm_results\flat_512x128x1024\20261011_scalar2\particle_postprocess`
+
+So a run is named `<case>/<date>_<tag>`. This replaces the earlier assumption "one folder per run named `<date>_output_<case>` directly under `wind_outputs`" for these two scripts.
+
+| File | Change | Why |
+|---|---|---|
+| [data_loaders/local_paths.py](../data_loaders/local_paths.py) | New optional key `lbm_results` in `OPTIONAL_KEYS`. New `wind_dir(paths, run)` returns `<lbm_results>/<run>/output`. New `particle_postprocess_dir(paths, run)` returns `<lbm_results>/<run>/particle_postprocess`. Both go through `_run_subfolder`, which raises `KeyError` ("set lbm_results in local_paths.yaml") if the key is missing. | One place that knows the layout. |
+| [scripts/inventory_lbm_output.py](../scripts/inventory_lbm_output.py) | Uses `wind_dir(paths, folder)`. The own `wind_outputs` check and the unused `Path` import are removed. `CASES["convective"]` old `"20261011_output_flat_512x128x1024_scalar2"`, new `"flat_512x128x1024/20261011_scalar2"`. Commented neutral line old `"<date>_output_flat_512x128x1024_neutral"`, new `"flat_512x128x1024/<date>_neutral"`. | Read the new layout. |
+| [scripts/plot_profiles_by_window.py](../scripts/plot_profiles_by_window.py) | Same changes as the inventory script (`wind_dir`, `CASES` values, check and import removed). | Read the new layout. |
+| [local_paths.example.yaml](../local_paths.example.yaml) | New commented `lbm_results: D:/lbm_results` with the layout described. `wind_outputs` is kept as "old layout", now said to be needed only for the Eulerian wind overlay in `plot_particle_velocity_profiles.py`; its example changed from `D:/lbm_results` to `Z:/`. | Document both layouts. |
+| [README.md](../README.md) | Section "Solver statistics, scalar2 and later": setup sentence now says set `lbm_results` and write runs as `<case>/<date>_<tag>`. | Match the scripts. |
+| [tests/test_local_paths.py](../tests/test_local_paths.py) | Two tests: `wind_dir` / `particle_postprocess_dir` give the expected last path parts; `wind_dir` raises `KeyError` matching `lbm_results` when the key is missing. | Cover the new helpers. |
+
+Behaviour change and how to revert: the two scripts no longer read `wind_outputs`. They need `lbm_results` in `local_paths.yaml`, and `CASES` values must be `<case>/<date>_<tag>`. To go back, revert `e279e5e`. **Mikael's own (untracked) `local_paths.yaml` needs `lbm_results: D:/lbm_results` added.**
+
+Open points from this commit:
+
+- The neutral name `flat_512x128x1024/<date>_neutral` is a guess at the naming. Correct it when that run exists.
+- `particle_postprocess_dir` is not used by any script yet. The contents of `particle_postprocess` were not inspected (Mikael only said "e.g. particle density CSV"). It is not known whether the `sensor_8x8x8/<window>` subfolders of the old layout live inside it.
 
 ## What was deliberately left alone
 
 - `data_loaders/lbm_parsers.py` and the scripts that use it.
 - Files with a plane suffix (`xz_ins_*`, `yz_ins_*`): not read yet. The inventory only counts them in the folder listing.
 - `xy_ag_*` for flat runs.
+- (`e279e5e`) The old keys `wind_outputs`, `particle_outputs` and `sensor_output_dir` are unchanged. `plot_particle_velocity_profiles.py` and the sensor/TTD scripts still use the old layout and were not migrated.
 
 ## Not checked and open items
 
@@ -58,17 +84,19 @@ Format facts the reader relies on (from the brief; the first and the stitching r
 - The full pytest suite has 1 failure that exists before these commits: `tests/test_particle_io.py::test_streamed_trajectories_read_11_column_file` (polars `SchemaError`, new_columns 5 != 11). Probably a polars version difference in this environment (inferred, not investigated). Not touched.
 - `xz_yav` with ranks split in y is not supported.
 - `domain_profile` is approximate for cases with buildings.
-- Neutral case folder name is still to be filled in.
+- Neutral case folder name is still to be filled in (now as `flat_512x128x1024/<date>_neutral`, a guess).
+- Not run on the real lab-PC data in the new layout; only on a synthetic run folder.
 - Not verified here: the contents of the planning file and of `output_user_def.cu`; the format facts above come from the brief.
 
 ## How to check
 
 ```sh
 git log --oneline 1773e52..HEAD
+git show --stat e279e5e
 git diff -w --stat 1773e52 HEAD
 pip install -e .[dev]
-pytest tests/test_lbm_output.py
-# set wind_outputs: D:/lbm_results in local_paths.yaml
+pytest tests/test_lbm_output.py tests/test_local_paths.py
+# set lbm_results: D:/lbm_results in local_paths.yaml (was wind_outputs before e279e5e)
 python scripts/inventory_lbm_output.py
 python scripts/plot_profiles_by_window.py
 ```

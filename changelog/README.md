@@ -10,7 +10,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-05 | [2026-10-05_ask-dont-assume.md](2026-10-05_ask-dont-assume.md) | CLAUDE.md: new "Ask, don't assume" rule above the workflow steps; no code changed | `ddaee2a` |
 | 2026-10-05 | [2026-10-05_presentation-scripts.md](2026-10-05_presentation-scripts.md) | Branch `analysis/presentation-oct`: transit time to first sensor entry (bug fix), raw-count TTDs, per-machine `local_paths.yaml`, Parquet cache, side-by-side live demo for the 2026-10-07 talk | `4fea15c` `588fadb` `3490c20` `af2a382` `53f0b81` |
 | 2026-10-06 | [2026-10-06_particle-stats-animation.md](2026-10-06_particle-stats-animation.md) | Branch `analysis/presentation-oct`: particle u, v, w statistics vs height, TTD statistics table, real-time source-to-sensor animation, optional `wind_outputs` path. Not run on real data | `771df9f` `b96f838` `c3bc27d` |
-| 2026-10-16 | [2026-10-16_scalar2-output-reader.md](2026-10-16_scalar2-output-reader.md) | Branch `analysis/scalar2-outputs`: reader for the scalar2 solver CSV statistics, central-moments module, inventory script, per-window profile script. Not run on real data | `b928177` `cb29aee` |
+| 2026-10-16 | [2026-10-16_scalar2-output-reader.md](2026-10-16_scalar2-output-reader.md) | Branch `analysis/scalar2-outputs`: reader for the scalar2 solver CSV statistics, central-moments module, inventory script, per-window profile script. Run folders now `<case>/<date>_<tag>` via `lbm_results`. Not run on real data | `b928177` `cb29aee` `e279e5e` |
 
 ## Glossary
 
