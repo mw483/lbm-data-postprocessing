@@ -14,6 +14,7 @@ KEYS = ("particle_outputs", "maps", "cache", "figures")
 OPTIONAL_KEYS = (
     "wind_outputs",   # old layout: folder holding the solver Output folders (<date>_output_<case>)
     "lbm_results",    # new layout: <case>/<date>_<tag>/{output,particle_postprocess} below this folder
+    "lbm_cases",      # an LBM-city cases/ folder: <case>/map/*.dat, <case>/particle_position/particle_position.txt
 )
 
 
@@ -55,6 +56,22 @@ def wind_dir(paths, run):
 def particle_postprocess_dir(paths, run):
     """Folder with the post-processed particle files (e.g. density CSV) of one run (same run name as wind_dir)."""
     return _run_subfolder(paths, run, "particle_postprocess")
+
+
+def case_map_dir(paths, case):
+    """Map set folder (topography, building, vegetation .dat) of an LBM-city case, e.g. case = "flat_512x128x1024"."""
+    return _case_folder(paths, case) / "map"
+
+
+def case_sources_file(paths, case):
+    """particle_position.txt of an LBM-city case."""
+    return _case_folder(paths, case) / "particle_position" / "particle_position.txt"
+
+
+def _case_folder(paths, case):
+    if "lbm_cases" not in paths:
+        raise KeyError("[ERROR] set lbm_cases in local_paths.yaml (an LBM-city cases/ folder)")
+    return paths["lbm_cases"] / case
 
 
 def _run_subfolder(paths, run, sub):

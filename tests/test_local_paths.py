@@ -1,7 +1,8 @@
 import pytest
 
 from data_loaders.local_paths import (
-    REPO_ROOT, load_local_paths, particle_postprocess_dir, sensor_output_dir, wind_dir,
+    REPO_ROOT, case_map_dir, case_sources_file, load_local_paths, particle_postprocess_dir,
+    sensor_output_dir, wind_dir,
 )
 
 
@@ -32,3 +33,19 @@ def test_run_folder_needs_lbm_results(tmp_path):
     f.write_text("particle_outputs: /data\nmaps: /maps\ncache: /c\nfigures: /f\n")
     with pytest.raises(KeyError, match="lbm_results"):
         wind_dir(load_local_paths(f), "a/b")
+
+
+def test_case_folders_follow_lbm_city_layout(tmp_path):
+    f = tmp_path / "local_paths.yaml"
+    f.write_text("particle_outputs: /data\nmaps: /maps\ncache: /c\nfigures: /f\nlbm_cases: /LBM-city/cases\n")
+    paths = load_local_paths(f)
+    assert case_map_dir(paths, "flat_512x128x1024").parts[-3:] == ("cases", "flat_512x128x1024", "map")
+    assert case_sources_file(paths, "flat_512x128x1024").parts[-3:] == (
+        "flat_512x128x1024", "particle_position", "particle_position.txt")
+
+
+def test_case_folder_needs_lbm_cases(tmp_path):
+    f = tmp_path / "local_paths.yaml"
+    f.write_text("particle_outputs: /data\nmaps: /maps\ncache: /c\nfigures: /f\n")
+    with pytest.raises(KeyError, match="lbm_cases"):
+        case_map_dir(load_local_paths(f), "flat")
