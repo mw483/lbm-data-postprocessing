@@ -44,6 +44,17 @@ python scripts/demo_presentation.py                      # live: isopleths -> ve
 
 Flat and cube array side by side, one shared camera. Close a window to go to the next stage. Settings are at the top of the script.
 
+### Solver statistics, scalar2 and later (2026-10-16)
+
+Set `wind_outputs` in `local_paths.yaml`, put the run folders in `CASES` at the top of each script, then:
+
+```sh
+python scripts/inventory_lbm_output.py      # which files, steps and ranks exist; stitch check of every plane
+python scripts/plot_profiles_by_window.py   # mean, sigma_w, TKE, S_w, theta, w'theta' per 200 s window; cases compared
+```
+
+`data_loaders/lbm_output.py` reads every plane layout (xy, xy_ag, xz, yz, xz_yav), stitches the ranks and reads `prof*.csv` and `header.txt`. The files hold raw moments (`uu` = <u u>); `physics_core/moments.py` turns them into variances, covariances, TKE and skewness.
+
 ```sh
 python scripts/analyze_particle_statistics.py
 pytest                      # run the checks

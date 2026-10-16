@@ -58,3 +58,39 @@ def plot_vertical_wind_profile(z_lbm, u_lbm, z_theory, u_theory, fetch_points, s
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
+
+def plot_profile_panels(profiles, quantities, save_path, title="", zmax=None, colors=None, styles=None):
+    """
+    One panel per quantity, height on the shared y-axis, one line per profile.
+
+    profiles:   {line label: DataFrame with a "z" column and the quantity columns}
+    quantities: [(column, x-axis label), ...]
+    colors:     {line label: color}; default one categorical colour per line in order
+    styles:     {line label: line style}; default solid
+    """
+    n = len(quantities)
+    fig, axes = plt.subplots(1, n, figsize=(2.8 * n + 1.0, 6), sharey=True, squeeze=False)
+    axes = axes[0]
+    default = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    for i, (label, df) in enumerate(profiles.items()):
+        color = (colors or {}).get(label, default[i % len(default)])
+        style = (styles or {}).get(label, "-")
+        for ax, (col, _) in zip(axes, quantities):
+            if col in df:
+                ax.plot(df[col], df["z"], style, color=color, linewidth=1.5, label=label)
+    for ax, (_, xlabel) in zip(axes, quantities):
+        ax.set_xlabel(xlabel)
+        ax.grid(True, linestyle=":", alpha=0.5)
+        ax.axvline(0.0, color="0.6", linewidth=0.8)
+    axes[0].set_ylabel("z [m]")
+    if zmax is not None:
+        axes[0].set_ylim(0, zmax)
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=min(len(labels), 6), frameon=False,
+               bbox_to_anchor=(0.5, 1.0))
+    if title:
+        fig.suptitle(title, y=1.06)
+    fig.tight_layout()
+    os.makedirs(os.path.dirname(str(save_path)), exist_ok=True)
+    fig.savefig(save_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
