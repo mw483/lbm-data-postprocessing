@@ -44,6 +44,16 @@ python scripts/demo_presentation.py                      # live: isopleths -> ve
 
 Flat and cube array side by side, one shared camera. Close a window to go to the next stage. Settings are at the top of the script.
 
+### 3D map viewer (2026-10-16)
+
+```sh
+python scripts/view_map_3d.py <map folder>                                       # whole map, auto coarsened
+python scripts/view_map_3d.py <map folder> --crop 4300 4900 1000 1500 --stride 1 # cells i0 i1 j0 j1, full 2 m
+python scripts/view_map_3d.py <map folder> ... --sources <particle_position.txt>  # overlay sources
+```
+
+The map folder holds `topography.dat`, `building.dat` and `vegetation.dat` (a path, or a subfolder of `maps` in `local_paths.yaml`). Press `p` over a point to print x, y, cell i, j and the heights there; `s` saves a screenshot to `<figures>/map_3d/`. Coarsened views widen buildings and trees, so pick sources on a `--stride 1` crop. `--save view.png` writes a PNG without a window.
+
 ### Solver statistics, scalar2 and later (2026-10-16)
 
 Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at `<lbm_results>/<case>/<date>_<tag>/output` (wind CSV) and `.../particle_postprocess` (post-processed particles). Put the runs, written `<case>/<date>_<tag>` (e.g. `flat_512x128x1024/20261011_scalar2`), in `CASES` at the top of each script, then:
