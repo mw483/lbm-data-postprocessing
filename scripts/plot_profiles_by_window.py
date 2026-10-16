@@ -8,13 +8,12 @@ plots:
   2. the last common window of all cases on top of each other.
 Writes the per-window statistics as CSV next to the figures.
 """
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from data_loaders.lbm_output import domain_profile, list_steps, load_prof
-from data_loaders.local_paths import load_local_paths
+from data_loaders.local_paths import load_local_paths, wind_dir
 from physics_core.moments import profile_moments
 from plotting_core.profile_plots import plot_profile_panels
 
@@ -22,9 +21,9 @@ from plotting_core.profile_plots import plot_profile_panels
 # Settings
 # =============================================================================
 CASES = {
-    # label: run folder under wind_outputs in local_paths.yaml (the folder holding the CSV files)
-    "convective": "20261011_output_flat_512x128x1024_scalar2",
-    # "neutral": "<date>_output_flat_512x128x1024_neutral",
+    # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
+    "convective": "flat_512x128x1024/20261011_scalar2",
+    # "neutral": "flat_512x128x1024/<date>_neutral",
 }
 QUANTITIES = [
     # (column of physics_core.moments.profile_moments, axis label)
@@ -50,14 +49,12 @@ def window_profiles(run_dir):
 
 def main():
     paths = load_local_paths()
-    if "wind_outputs" not in paths:
-        raise KeyError("[ERROR] set wind_outputs in local_paths.yaml (folder holding the run output folders)")
     out_dir = paths["figures"] / "scalar2_outputs" / "profiles"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     by_case = {}
     for label, folder in CASES.items():
-        windows = window_profiles(Path(paths["wind_outputs"]) / folder)
+        windows = window_profiles(wind_dir(paths, folder))
         if not windows:
             raise FileNotFoundError(f"[ERROR] no prof*.csv in {folder}")
         by_case[label] = windows

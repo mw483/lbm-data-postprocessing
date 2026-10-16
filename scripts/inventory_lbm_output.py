@@ -8,20 +8,19 @@ domain size. Prints a summary and writes inventory_<case>.csv.
 
 Files with an extra plane suffix (xz_ins_*, yz_ins_*) are counted by the folder listing only.
 """
-from pathlib import Path
 
 import pandas as pd
 
 from data_loaders.lbm_output import LAYOUTS, load_plane, read_header_txt, scan_run
-from data_loaders.local_paths import load_local_paths
+from data_loaders.local_paths import load_local_paths, wind_dir
 
 # =============================================================================
 # Settings
 # =============================================================================
 CASES = {
-    # label: run folder under wind_outputs in local_paths.yaml (the folder holding the CSV files)
-    "convective": "20261011_output_flat_512x128x1024_scalar2",
-    # "neutral": "<date>_output_flat_512x128x1024_neutral",
+    # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
+    "convective": "flat_512x128x1024/20261011_scalar2",
+    # "neutral": "flat_512x128x1024/<date>_neutral",
 }
 SKIP_PREFIXES = ("xy_ag_",)    # terrain-following planes repeat the xy planes on flat ground
 CHECK_SHAPES = True            # read the newest step of every plane variable (slower)
@@ -72,13 +71,11 @@ def shape_check(run_dir, header, name, step):
 
 def main():
     paths = load_local_paths()
-    if "wind_outputs" not in paths:
-        raise KeyError("[ERROR] set wind_outputs in local_paths.yaml (folder holding the run output folders)")
     out_dir = paths["figures"] / "scalar2_outputs" / "inventory"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for label, folder in CASES.items():
-        run_dir = Path(paths["wind_outputs"]) / folder
+        run_dir = wind_dir(paths, folder)
         header, table = summarise(run_dir)
         prof_steps = sorted(int(s) for s in scan_run(run_dir).query("name == 'prof'")["step"].unique())
         print(f"\n=== {label}: {run_dir}")

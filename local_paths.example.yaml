@@ -17,9 +17,15 @@ cache: cache
 # Where scripts save figures.
 figures: figures
 
-# Optional: folder holding the solver wind outputs, one subfolder per run with the CSV files
-# directly inside (e.g. 20261011_output_flat_512x128x1024_scalar2/ with header.txt, prof*.csv,
-# xy_*.csv). Needed by inventory_lbm_output.py, plot_profiles_by_window.py and the Eulerian wind
-# overlay in plot_particle_velocity_profiles.py.
-#   Lab PC:  D:/lbm_results   (CSV copied from TSUBAME, see the storage plan)
-# wind_outputs: D:/lbm_results
+# Optional: root of the run folders, one per case and run, laid out as
+#   <lbm_results>/<case>/<date>_<tag>/output               wind CSV (header.txt, prof*.csv, xy_*.csv, ...)
+#   <lbm_results>/<case>/<date>_<tag>/particle_postprocess post-processed particles, e.g. density CSV
+# e.g. D:/lbm_results/flat_512x128x1024/20261011_scalar2/output. A run is named "<case>/<date>_<tag>".
+# Needed by inventory_lbm_output.py and plot_profiles_by_window.py.
+# lbm_results: D:/lbm_results
+
+# Optional, old layout: folder holding the solver wind outputs, one subfolder per run
+# (e.g. 20260630_output_flat_16mapproach/ with xz_yav_*.csv). Only needed for the
+# Eulerian wind overlay in plot_particle_velocity_profiles.py.
+#   Lab PC:  Z:/   (repo 1 runs on TSUBAME)
+# wind_outputs: Z:/

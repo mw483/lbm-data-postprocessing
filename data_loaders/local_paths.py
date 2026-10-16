@@ -11,7 +11,10 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 KEYS = ("particle_outputs", "maps", "cache", "figures")
-OPTIONAL_KEYS = ("wind_outputs",)   # folder holding the solver Output folders (<date>_output_<case>)
+OPTIONAL_KEYS = (
+    "wind_outputs",   # old layout: folder holding the solver Output folders (<date>_output_<case>)
+    "lbm_results",    # new layout: <case>/<date>_<tag>/{output,particle_postprocess} below this folder
+)
 
 
 def load_local_paths(path=None):
@@ -42,3 +45,19 @@ def load_local_paths(path=None):
 def sensor_output_dir(paths, run, sensor_folder="sensor_8x8x8", window="1200-1800_sensor_density"):
     """Folder with sensor_hit_ids.txt and target_trajectories.csv for one C++ post-processing run."""
     return paths["particle_outputs"] / run / sensor_folder / window
+
+
+def wind_dir(paths, run):
+    """Folder with the solver's wind CSV files of one run, e.g. run = "flat_512x128x1024/20261011_scalar2"."""
+    return _run_subfolder(paths, run, "output")
+
+
+def particle_postprocess_dir(paths, run):
+    """Folder with the post-processed particle files (e.g. density CSV) of one run (same run name as wind_dir)."""
+    return _run_subfolder(paths, run, "particle_postprocess")
+
+
+def _run_subfolder(paths, run, sub):
+    if "lbm_results" not in paths:
+        raise KeyError("[ERROR] set lbm_results in local_paths.yaml (folder holding <case>/<date>_<tag>/output ...)")
+    return paths["lbm_results"] / run / sub

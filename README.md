@@ -46,7 +46,7 @@ Flat and cube array side by side, one shared camera. Close a window to go to the
 
 ### Solver statistics, scalar2 and later (2026-10-16)
 
-Set `wind_outputs` in `local_paths.yaml`, put the run folders in `CASES` at the top of each script, then:
+Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at `<lbm_results>/<case>/<date>_<tag>/output` (wind CSV) and `.../particle_postprocess` (post-processed particles). Put the runs, written `<case>/<date>_<tag>` (e.g. `flat_512x128x1024/20261011_scalar2`), in `CASES` at the top of each script, then:
 
 ```sh
 python scripts/inventory_lbm_output.py      # which files, steps and ranks exist; stitch check of every plane
