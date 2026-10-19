@@ -23,7 +23,7 @@ from plotting_core.profile_plots import plot_profile_panels
 CASES = {
     # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
     "convective": "flat_512x128x1024/20261011_scalar2",
-    # "neutral": "flat_512x128x1024/<date>_neutral",
+    "neutral": "flat_512x128x1024/20261017_neutral",
 }
 QUANTITIES = [
     # (column of physics_core.moments.profile_moments, axis label)

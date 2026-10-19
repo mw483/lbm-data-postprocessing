@@ -20,7 +20,7 @@ from data_loaders.local_paths import load_local_paths, wind_dir
 CASES = {
     # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
     "convective": "flat_512x128x1024/20261011_scalar2",
-    # "neutral": "flat_512x128x1024/<date>_neutral",
+    "neutral": "flat_512x128x1024/20261017_neutral",
 }
 SKIP_PREFIXES = ("xy_ag_",)    # terrain-following planes repeat the xy planes on flat ground
 CHECK_SHAPES = True            # read the newest step of every plane variable (slower)
