@@ -22,7 +22,7 @@ figures: figures
 #   <lbm_results>/<case>/<date>_<tag>/output               wind CSV (header.txt, prof*.csv, xy_*.csv, ...)
 #   <lbm_results>/<case>/<date>_<tag>/particle_postprocess post-processed particles, e.g. density CSV
 # e.g. D:/lbm_results/flat_512x128x1024/20261011_scalar2/output. A run is named "<case>/<date>_<tag>".
-# Needed by inventory_lbm_output.py and plot_profiles_by_window.py.
+# Needed by inventory_lbm_output.py, plot_profiles_by_window.py and analyze_particle_density.py.
 # lbm_results: D:/lbm_results
 
 # Optional, old layout: folder holding the solver wind outputs, one subfolder per run

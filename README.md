@@ -70,6 +70,16 @@ The heatmaps use one colour scale per variable, shared by both cases and every w
 
 `data_loaders/lbm_output.py` reads every plane layout (xy, xy_ag, xz, yz, xz_yav), stitches the ranks and reads `prof*.csv` and `header.txt`. The files hold raw moments (`uu` = <u u>); `physics_core/moments.py` turns them into variances, covariances, TKE and skewness.
 
+### Particle concentrations from the C++ basic pass (2026-10-19)
+
+Run `run_basic.sh` (LBM-city `cases/<case>/`) once per window; each window lands in `particle_postprocess/<start>-<end>_basic/`. The script needs the whole release window, the steady window and its blocks (settings `FULL_WINDOW`, `STEADY_WINDOW`, `BLOCKS`), then:
+
+```sh
+python scripts/analyze_particle_density.py   # N(t), C(z), y-mean C(x) with block error bands, xz slab; CSV tables
+```
+
+The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/particle_density/`.
+
 ```sh
 python scripts/analyze_particle_statistics.py
 pytest                      # run the checks
