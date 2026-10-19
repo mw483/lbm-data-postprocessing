@@ -12,6 +12,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-06 | [2026-10-06_particle-stats-animation.md](2026-10-06_particle-stats-animation.md) | Branch `analysis/presentation-oct`: particle u, v, w statistics vs height, TTD statistics table, real-time source-to-sensor animation, optional `wind_outputs` path. Not run on real data | `771df9f` `b96f838` `c3bc27d` |
 | 2026-10-16 | [2026-10-16_scalar2-output-reader.md](2026-10-16_scalar2-output-reader.md) | Branch `analysis/scalar2-outputs`: reader for the scalar2 solver CSV statistics, central-moments module, inventory script, per-window profile script. Run folders now `<case>/<date>_<tag>` via `lbm_results`. Not run on real data | `b928177` `cb29aee` `e279e5e` |
 | 2026-10-16 | [2026-10-16_map-3d-viewer.md](2026-10-16_map-3d-viewer.md) | Branch `analysis/scalar2-outputs`: 3D viewer for map sets (topography, building, vegetation) with face-only building meshes, crop, picking and source overlay; map reader handles touching Fortran values. Run on the Jakarta map in the cloud only, not on the PC. Follow-up: `--case` reads an LBM-city case's map set through the optional `lbm_cases` path | `08fdcab` `6da5fe3` `facb558` `bb53352` |
+| 2026-10-19 | [2026-10-19_velocity-stress-and-heatmaps.md](2026-10-19_velocity-stress-and-heatmaps.md) | Branch `analysis/scalar2-outputs`: velocity and Reynolds stress profiles per window (as is and / Ub, Chang et al. 2009 style), y-averaged x-z heatmaps of U, W, sigma_w, TKE with shared colour scale, GIF and MP4. Run on copies of real output in the cloud, not on the lab PC | `0abeba0` `70483dd` `bf0f9a7` |
 
 ## Glossary
 
@@ -31,6 +32,9 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Registry | Planned YAML file per simulation case (paths, dx, sensors, u*, z0). Designed, not implemented |
 | Map set | The three map files of one case: `topography.dat`, `building.dat`, `vegetation.dat`. In a map set, building and vegetation heights are absolute (ground + object) |
 | Stride | Coarsening factor of the map viewer: one drawn column covers stride x stride cells |
+| Window | One 200 s averaging period of the solver statistics; steps like 25001-175001 are the window ends |
+| Ub | Inflow (initial) velocity, 5 m/s in the flat runs; used to normalise the profile figures |
+| Resolved TKE | 0.5 (var_u + var_v + var_w) from the grid-scale variances, no SGS part |
 | Editable install | `pip install -e .`: Python imports the repo folders directly, so edits take effect without reinstalling |
 
 ## Inspecting the changes
