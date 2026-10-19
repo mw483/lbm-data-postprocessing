@@ -68,28 +68,45 @@ def plot_profile_panels(profiles, quantities, save_path, title="", zmax=None, co
     colors:     {line label: color}; default one categorical colour per line in order
     styles:     {line label: line style}; default solid
     """
-    n = len(quantities)
-    fig, axes = plt.subplots(1, n, figsize=(2.8 * n + 1.0, 6), sharey=True, squeeze=False)
-    axes = axes[0]
+    plot_profile_grid(profiles, [quantities], save_path, title=title, zmax=zmax, colors=colors, styles=styles)
+
+
+def plot_profile_grid(profiles, rows, save_path, title="", zmax=None, colors=None, styles=None):
+    """
+    Like plot_profile_panels, with the panels in rows: rows = [[(column, label), ...], ...].
+    A None entry leaves that panel empty (hidden), so rows of different length line up.
+    """
+    n_rows, n_cols = len(rows), max(len(r) for r in rows)
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(2.8 * n_cols + 1.0, 5.0 * n_rows + 1.0),
+                             sharey=True, squeeze=False)
     default = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    panels = []
+    for r, row in enumerate(rows):
+        for c in range(n_cols):
+            spec = row[c] if c < len(row) else None
+            if spec is None:
+                axes[r][c].set_visible(False)
+            else:
+                panels.append((axes[r][c], spec))
     for i, (label, df) in enumerate(profiles.items()):
         color = (colors or {}).get(label, default[i % len(default)])
         style = (styles or {}).get(label, "-")
-        for ax, (col, _) in zip(axes, quantities):
+        for ax, (col, _) in panels:
             if col in df:
                 ax.plot(df[col], df["z"], style, color=color, linewidth=1.5, label=label)
-    for ax, (_, xlabel) in zip(axes, quantities):
+    for ax, (_, xlabel) in panels:
         ax.set_xlabel(xlabel)
         ax.grid(True, linestyle=":", alpha=0.5)
         ax.axvline(0.0, color="0.6", linewidth=0.8)
-    axes[0].set_ylabel("z [m]")
+    for r in range(n_rows):
+        axes[r][0].set_ylabel("z [m]")
     if zmax is not None:
-        axes[0].set_ylim(0, zmax)
-    handles, labels = axes[0].get_legend_handles_labels()
+        axes[0][0].set_ylim(0, zmax)
+    handles, labels = panels[0][0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=min(len(labels), 6), frameon=False,
                bbox_to_anchor=(0.5, 1.0))
     if title:
-        fig.suptitle(title, y=1.06)
+        fig.suptitle(title, y=1.04 if n_rows > 1 else 1.06)
     fig.tight_layout()
     os.makedirs(os.path.dirname(str(save_path)), exist_ok=True)
     fig.savefig(save_path, dpi=200, bbox_inches="tight")

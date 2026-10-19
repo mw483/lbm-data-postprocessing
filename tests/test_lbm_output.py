@@ -147,3 +147,22 @@ def test_moments_match_sample_statistics():
     assert mixed_third_moment(raw(a * a * b), raw(a * a), raw(a * b), am, bm) == pytest.approx(
         np.mean((a - am) ** 2 * (b - bm)), rel=1e-6, abs=1e-9)
     assert np.isnan(skewness(1.0, -0.1))
+
+
+def test_plane_moments_central():
+    from physics_core.moments import plane_moments
+    f = {"um": np.array([2.0]), "vm": np.array([0.0]), "wm": np.array([0.5]),
+         "uu": np.array([5.0]), "vv": np.array([1.0]), "ww": np.array([1.25])}
+    m = plane_moments(f)
+    assert m["U"][0] == 2.0 and m["var_u"][0] == pytest.approx(1.0) and m["var_w"][0] == pytest.approx(1.0)
+    assert m["sigma_w"][0] == pytest.approx(1.0) and m["tke"][0] == pytest.approx(1.5)
+    assert "tke" not in plane_moments({"um": f["um"], "uu": f["uu"]})
+
+
+def test_shared_norm_same_scale_and_centred():
+    from plotting_core.heatmap_plots import shared_norm
+    a, b = np.array([[0.0, 1.0]]), np.array([[np.nan, 3.0]])
+    n = shared_norm([a, b])
+    assert (n.vmin, n.vmax) == (0.0, 3.0)
+    c = shared_norm([np.array([-0.5, 2.0])], center=0.0)
+    assert (c.vmin, c.vcenter, c.vmax) == (-2.0, 0.0, 2.0)

@@ -69,3 +69,19 @@ def profile_moments(prof):
     out["flux_wt_model"] = p["wt_MODEL"]                          # model SGS flux [K m/s]
     out["sgs_sum"] = p["uu_SGS"] + p["vv_SGS"] + p["ww_SGS"]
     return out
+
+
+def plane_moments(fields):
+    """Central moments from raw plane fields (e.g. load_plane arrays) keyed um, vm, wm, uu, vv, ww.
+
+    Returns {"U", "V", "W", "var_u", "var_v", "var_w", "sigma_w", "tke"} for the keys that can be formed.
+    """
+    out = {k.upper()[0]: fields[k] for k in ("um", "vm", "wm") if k in fields}
+    for c in "uvw":
+        if f"{c}{c}" in fields and f"{c}m" in fields:
+            out[f"var_{c}"] = covariance(fields[f"{c}{c}"], fields[f"{c}m"], fields[f"{c}m"])
+    if "var_w" in out:
+        out["sigma_w"] = sigma(out["var_w"])
+    if all(f"var_{c}" in out for c in "uvw"):
+        out["tke"] = tke(out["var_u"], out["var_v"], out["var_w"])
+    return out
