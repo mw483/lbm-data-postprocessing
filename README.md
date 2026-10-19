@@ -62,7 +62,11 @@ Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at 
 ```sh
 python scripts/inventory_lbm_output.py      # which files, steps and ranks exist; stitch check of every plane
 python scripts/plot_profiles_by_window.py   # mean, sigma_w, TKE, S_w, theta, w'theta' per 200 s window; cases compared
+python scripts/plot_velocity_stress_profiles.py   # U, V, W and <u'u'>, <v'v'>, <w'w'>, <u'w'> per window, as is and / Ub (Chang et al. 2009 style)
+python scripts/plot_xz_yav_heatmaps.py      # y-averaged x-z heatmaps of U, W, sigma_w, TKE per window; PNG frames, GIF, MP4
 ```
+
+The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side) and `<case>_step*.png` (one case each), plus `combined.gif` / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
 
 `data_loaders/lbm_output.py` reads every plane layout (xy, xy_ag, xz, yz, xz_yav), stitches the ranks and reads `prof*.csv` and `header.txt`. The files hold raw moments (`uu` = <u u>); `physics_core/moments.py` turns them into variances, covariances, TKE and skewness.
 
