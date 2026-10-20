@@ -85,3 +85,23 @@ def plane_moments(fields):
     if all(f"var_{c}" in out for c in "uvw"):
         out["tke"] = tke(out["var_u"], out["var_v"], out["var_w"])
     return out
+
+
+def convective_scales(moments, theta0=300.0, g=9.81):
+    """Mixed-layer depth z_i and convective velocity w* from a profile_moments table.
+
+    Total heat flux = resolved <w'theta'> + model SGS flux. z_i is the height of its minimum
+    (the entrainment-zone flux), the surface flux is the value at the lowest level with a nonzero flux
+    (the levels below the ground are all zero), and w* = (g / theta0 * surface flux * z_i)^(1/3).
+    Returns (z_i, w*, surface flux); z_i and w* are NaN when there is no positive surface flux.
+    """
+    flux = (moments["flux_wt"] + moments["flux_wt_model"]).to_numpy(dtype=float)
+    z = moments["z"].to_numpy(dtype=float)
+    ok = np.isfinite(flux)
+    z, flux = z[ok], flux[ok]
+    nonzero = np.nonzero(flux)[0]
+    surface = flux[nonzero[0]] if nonzero.size else 0.0
+    if surface <= 0:
+        return np.nan, np.nan, surface
+    zi = z[np.argmin(flux)]
+    return zi, (g / theta0 * surface * zi) ** (1.0 / 3.0), surface
