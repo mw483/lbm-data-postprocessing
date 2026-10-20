@@ -80,6 +80,27 @@ python scripts/analyze_particle_density.py   # N(t), C(z), y-mean C(x) with bloc
 
 The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/particle_density/`.
 
+### Raw particle binaries: Lagrangian statistics and animations (2026-10-20)
+
+Step 1, on TSUBAME next to the binaries (Python 3.9 + numpy; `python3 -m pip install --user numpy` if missing):
+
+```sh
+python3 scripts/reduce_particle_bins.py --bin-dir <particle folder> \
+    --sources <LBM-city>/cases/flat_512x128x1024/particle_position/particle_position.txt \
+    --out <somewhere>/particle_reduced
+```
+
+It streams outputs 1200-1800 once and writes `reduced.npz` (age, height and x statistics) and `snapshots/snap_<n>.npz` (every 5th output, a fixed 1/8 of the particles with age). Copy the `particle_reduced` folder to `<lbm_results>/<case>/<date>_<tag>/particle_reduced` on the PC (rclone), then:
+
+```sh
+python scripts/plot_particle_bin_stats.py           # height and sigma_z vs age, PDF(z | age), CBL scaling, particle vs Eulerian sigma_w, SGS along x
+python scripts/animate_particles.py --mode xz       # side view of all particles, cases stacked; GIF + MP4
+python scripts/animate_particles.py --mode xy --slab 0 10   # top view of the lowest 10 m
+python scripts/animate_particles.py --mode 3d       # PyVista point cloud (off-screen)
+```
+
+Ages come from the particle ID (release number). Age statistics use only sources with x <= 104 m, so particles do not leave through the outflow (x = 1024 m) within the plotted ages. `sgs_along_x.png` shows the SGS velocity of near-ground particles along x, with the GPU rank boundaries marked.
+
 ```sh
 python scripts/analyze_particle_statistics.py
 pytest                      # run the checks
