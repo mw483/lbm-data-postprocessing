@@ -3,7 +3,6 @@ import sys
 import json
 import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from physics_core.turbulence import calc_sigma_v
 from data_loaders.lbm_parsers import XYStackedParser
 

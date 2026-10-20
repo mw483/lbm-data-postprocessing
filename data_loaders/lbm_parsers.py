@@ -147,42 +147,21 @@ def build_3d_density_volume(directory_path):
     return volume_3d
 
 
-def build_sensor_density_volume(directory_path, sensor_x, sensor_y, sensor_z):
-    """
-    Builds a 3D NumPy volume by parsing only the density planes 
-    belonging to a specific Sensor XYZ coordinate.
-    """
-    parser = XYDensityParser()
-    
-    # 1. Define the exact search pattern using the provided coordinates
-    # Pattern: sensor_{sensor_id}_{x}_{y}_{z}_xy_number_density_*m.csv
-    # We use a wildcard (*) for the sensor_id since we just want to match the X, Y, Z.
-    search_pattern = os.path.join(
-        directory_path, 
-        f"sensor_{int(sensor_x)}_{int(sensor_y)}_{int(sensor_z)}_xy_number_density_*m.csv"
-    )
-    
-    files = glob.glob(search_pattern)
-    
-    if not files:
-        print(f"[ERROR] No density files found for Sensor at ({sensor_x}, {sensor_y}, {sensor_z}) in directory.")
-        return None
+def xz_yav_path(output_dir, var, step, rank=0):
+    """Path of a y-averaged XZ plane CSV, e.g. xz_yav_um00180000_0000.csv (step = output step number)."""
+    return os.path.join(output_dir, f"xz_yav_{var}{int(step):08d}_{int(rank):04d}.csv")
 
-    sorted_files = sorted(files, key=extract_z_height)
-    
-    # 3. Parse and stack
-    layers = []
-    for f in sorted_files:
-        matrix = parser.parse_file(f)
-        if matrix is not None:
-            layers.append(matrix)
-            
-    if not layers:
-        return None
 
-    # 4. Construct the physical 3D Volume
-    volume_3d = np.stack(layers, axis=2)
-    volume_3d = np.transpose(volume_3d, (1, 0, 2))  # Match PyVista (nx, ny, nz)
-    
-    print(f"Successfully built 3D Sensor Footprint Volume with shape: {volume_3d.shape}")
-    return volume_3d
+def load_xz_yav(output_dir, step, variables=("um", "vm", "vv", "wm", "uw"), rank=0):
+    """
+    Load several y-averaged XZ planes of one output step.
+    Returns {var: 2D array [z_idx, x_idx]}. Raises FileNotFoundError if one is missing.
+    """
+    fields = {}
+    for var in variables:
+        path = xz_yav_path(output_dir, var, step, rank)
+        mat = XZMatrixParser.parse_file(path)
+        if mat is None:
+            raise FileNotFoundError(path)
+        fields[var] = mat
+    return fields

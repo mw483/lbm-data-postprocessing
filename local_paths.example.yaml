@@ -1,0 +1,40 @@
+# Per-machine data folders for the scripts.
+# Copy this file to local_paths.yaml (git-ignored) in the repo root and edit it for this machine.
+# Use forward slashes, also on Windows. Relative paths are taken from the repo root.
+
+# Folder holding the C++ post-processing outputs, one subfolder per run
+# (e.g. 20260630_particle_flat_16mapproach/sensor_8x8x8/1200-1800_sensor_density/).
+#   Lab PC:  D:/lbm_results/Particle_PostProcess_Outputs
+#   Laptop:  the rclone mount of TSUBAME /gs/bs/tga-lbmcity/mikael/LBM_particle_test/Particle_PostProcess_Outputs
+particle_outputs: D:/lbm_results/Particle_PostProcess_Outputs
+
+# Folder holding the map .dat files (repo 1's map/ folder, one building.dat per map).
+# For LBM-city map sets (three .dat files per case) see lbm_cases below.
+maps: C:/Users/Mikael Wijaya/Documents/GitHub/lbm-cuda-project/map
+
+# Local, fast disk for cached per-sensor subsets (Parquet). Created when needed.
+cache: cache
+
+# Where scripts save figures.
+figures: figures
+
+# Optional: root of the run folders, one per case and run, laid out as
+#   <lbm_results>/<case>/<date>_<tag>/output               wind CSV (header.txt, prof*.csv, xy_*.csv, ...)
+#   <lbm_results>/<case>/<date>_<tag>/particle_postprocess post-processed particles, e.g. density CSV
+# e.g. D:/lbm_results/flat_512x128x1024/20261011_scalar2/output. A run is named "<case>/<date>_<tag>".
+# Needed by inventory_lbm_output.py, plot_profiles_by_window.py and analyze_particle_density.py.
+# lbm_results: D:/lbm_results
+
+# Optional, old layout: folder holding the solver wind outputs, one subfolder per run
+# (e.g. 20260630_output_flat_16mapproach/ with xz_yav_*.csv). Only needed for the
+# Eulerian wind overlay in plot_particle_velocity_profiles.py.
+#   Lab PC:  Z:/   (repo 1 runs on TSUBAME)
+# wind_outputs: Z:/
+
+# Optional: an LBM-city cases/ folder (branch mikael/cases). Each case holds
+#   <lbm_cases>/<case>/map/{topography,building,vegetation}.dat
+#   <lbm_cases>/<case>/particle_position/particle_position.txt
+# Needed by view_map_3d.py --case.
+#   Lab PC:  C:/Users/Mikael Wijaya/Documents/GitHub/LBM-city/cases
+#   TSUBAME checkout through rclone:  Y:/cases
+# lbm_cases: C:/Users/Mikael Wijaya/Documents/GitHub/LBM-city/cases

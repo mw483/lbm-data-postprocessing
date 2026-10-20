@@ -1,11 +1,9 @@
-import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.append(str(REPO_ROOT))
+import polars as pl
 
-from data_loaders.particle_io import extract_hit_list_by_plane
+from data_loaders.local_paths import load_local_paths, sensor_output_dir
+from data_loaders.particle_io import load_hit_table
 from physics_core.particle_analysis import (
     compute_transit_times,
     compute_depth_averaged_u,
@@ -20,7 +18,8 @@ def main():
     sensor_x = 3672.0
     delta_x = 600.0         # Source to receptor fetch distance
     heights = [20.0, 50.0, 90.0]
-    dt_output = 1.0
+    sensor_size = (8.0, 8.0, 8.0)   # SIZE_SENSOR_DENSITY used by the C++ run (sensor_8x8x8)
+    dt_output = 1.0         # Seconds between particle .bin outputs (1 s, confirmed by kaka 2026-10-05)
     scaling_method = "no_normalization"  # Options: "median", "advective", "eddy_turnover", "no_normalization"
 
     # Set parameters conditionally based on the method
@@ -32,12 +31,14 @@ def main():
         max_t = 3.0        # Dimensionless scale limit
     
     # Target case: Switch between Flat and Cube cases
-    case_name = "Cube Array"
-    csv_path = Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\target_trajectories.csv")
-    capsule_path = Path(r"D:\lbm_results\Particle_PostProcess_Outputs\20260803_particle_cube_16mapproach\sensor_8x8x8\1200-1800_sensor_density\sensor_hit_ids.txt")
+    case_name = "Flat"
+    run = "20260630_particle_flat_16mapproach"   # folder under particle_outputs
+    paths = load_local_paths()   # per-machine folders, see local_paths.example.yaml
+    csv_path = sensor_output_dir(paths, run) / "target_trajectories.csv"
+    capsule_path = sensor_output_dir(paths, run) / "sensor_hit_ids.txt"
     prof_path = Path(r"Z:\20260527_output_flat_3072\prof00180000_0000.csv") # Used if scaling_method="advective"[cite: 1]
 
-    output_fig = REPO_ROOT / "figures" / "comparative" / f"ensemble_ttd_{case_name.lower().replace(' ', '_')}_{scaling_method}.png"
+    output_fig = paths["figures"] / "comparative" / f"ensemble_ttd_{case_name.lower().replace(' ', '_')}_{scaling_method}.png"
 
     # =========================================================================
     # Process Line-Ensembles per Height
@@ -48,20 +49,20 @@ def main():
     for z in heights:
         print(f"\n--- Processing Height Z = {z:.1f} m ---")
         
-        # 1. Harvest particles across all Y sensors at (sensor_x, z)
-        hit_ids = extract_hit_list_by_plane(capsule_path, target_x=sensor_x, target_z=z)
-        print(f"  -> Intercepted {len(hit_ids):,} unique particles along spanwise line.")
-        
-        if len(hit_ids) == 0:
+        # 1. Hits at every spanwise (Y) sensor at (sensor_x, z)
+        hits = load_hit_table(capsule_path).filter(
+            ((pl.col("sx") - sensor_x).abs() <= 0.5) & ((pl.col("sz") - z).abs() <= 0.5)
+        )
+        print(f"  -> {hits.height:,} hits along the spanwise line.")
+
+        if hits.height == 0:
             continue
 
-        # 2. Extract transit times using Polars
-        delta_t = compute_transit_times(
-            csv_path=csv_path,
-            target_ids=hit_ids,
-            dt_output=dt_output,
-            separator=","
-        )
+        # 2. Release -> first entry into a sensor box; a particle that hit several sensors
+        #    on the line counts once, at its earliest arrival (same N as the old unique-ID set)
+        transit = compute_transit_times(csv_path, hits, sensor_size, dt_output=dt_output)
+        delta_t = transit.group_by("id").agg(pl.col("delta_t").min())["delta_t"].to_numpy()
+        print(f"  -> {len(delta_t):,} unique particles with an arrival time.")
 
         # 3. Apply normalization
         u_bar = compute_depth_averaged_u(prof_path, target_z=z) if scaling_method == "advective" else None
@@ -86,7 +87,8 @@ def main():
         bin_width=bin_w,
         max_scaled_t=max_t,
         save_path=output_fig,
-        title=f"{case_name}: Spanwise-Ensemble Normalized TTD ({scaling_method.capitalize()} Scaling)"
+        title=f"{case_name}: Spanwise-Ensemble Normalized TTD ({scaling_method.capitalize()} Scaling)",
+        density=False   # raw counts (professor's request, 2026-10-05)
     )
 
 if __name__ == "__main__":

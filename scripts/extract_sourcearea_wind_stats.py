@@ -3,7 +3,6 @@ import json
 import os
 import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from physics_core.turbulence import fit_boundary_layer_profile
 from data_loaders.lbm_parsers import XZMatrixParser
 

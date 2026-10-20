@@ -1,9 +1,7 @@
 import os
-import sys
 from pathlib import Path
 
 # Ensure the script can find the root repository directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Import the plotting function from the core module
 from plotting_core.density_plots import plot_3d_isopleths

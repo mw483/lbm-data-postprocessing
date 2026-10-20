@@ -3,8 +3,6 @@ import sys
 import glob
 import re
 
-# Ensure Python can find the modular packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.footprint_io import load_footprint_counts
 from plotting_core.sensitivity_plots import plot_vertical_detection_profile

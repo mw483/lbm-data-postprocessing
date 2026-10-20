@@ -1,12 +1,17 @@
 import pyvista as pv
 import numpy as np
 import os
-import sys
 from scipy.ndimage import gaussian_filter
 import polars as pl
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_loaders.map_io import create_voxel_buildings, load_lbm_map
+from data_loaders.map_io import load_lbm_map
+from plotting_core.pyvista_helpers import (
+    add_ground_plane,
+    add_sensor_box,
+    add_snapshot_key,
+    add_voxel_buildings,
+    show_iso_grid,
+)
 
 pv.global_theme.allow_empty_mesh = True # Allow empty mesh (for flat plane maps)
 
@@ -29,103 +34,40 @@ def calculate_3d_cumulative_thresholds(volume_3d, voxel_volume, levels=[0.50, 0.
         thresholds.append(float(sorted_vals[idx]))
 
     # Return unique, sorted threshold values
-    return sorted(list(set(thresholds))) 
+    return sorted(list(set(thresholds)))
 
 
-def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0):
+def _bin_trajectories(trajectories, map_filepath, dx, voxel_res, z_max):
     """
-    Renders 3D trajectories, a transparent sensor volume, and the building map using PyVista.
-    Assumes particle coordinates and sensor parameters are ALREADY in physical meters.
+    Pools all trajectory points and bins them into voxel_res^3 physical voxels
+    spanning the map (or the particle extent + 10 m when no map is given).
+    Returns (raw_hist, total_samples, elevation_mat, nx_map, ny_map,
+    x_domain_max, y_domain_max); elevation_mat/nx_map/ny_map are None without a map.
     """
-    if not trajectories:
-        print("No trajectories to plot!")
-        return
+    # --- 1. Pool all 3D trajectory points ---
+    all_points = np.vstack([coords for coords in trajectories.values() if len(coords) > 0])
+    total_samples = len(all_points)
 
-    # 1. Format the trajectory data for PyVista (PolyData lines)
-    points = []
-    lines = []
-    for p_id, coords in trajectories.items():
-        if len(coords) < 2:  # Need at least 2 points to draw a line
-            continue
-            
-        start_idx = len(points)
-        
-        # Keep coordinates EXACTLY as they are (already in meters)
-        scaled_coords = [(float(x), float(y), float(z)) for x, y, z in coords]
-        points.extend(scaled_coords)
-        
-        # PyVista line format: [number_of_points, index1, index2, ...]
-        lines.append(len(coords))
-        lines.extend(range(start_idx, start_idx + len(coords)))
-
-    poly = pv.PolyData(points)
-    poly.lines = lines
-
-    # 2. Define the Sensor Box bounds (Already in meters!)
-    cx, cy, cz = sensor_center 
-    sx, sy, sz = sensor_size
-
-    bounds = [
-        cx - sx/2, cx + sx/2,  # X min, X max
-        cy - sy/2, cy + sy/2,  # Y min, Y max
-        cz - sz/2, cz + sz/2   # Z min, Z max
-    ]
-    sensor_box = pv.Box(bounds=bounds)
-
-    # 3. Setup the PyVista Plotter
-    plotter = pv.Plotter(off_screen=False)
-    
-    # Add Trajectories and Sensor
-    plotter.add_mesh(poly, color="cyan", line_width=0.4, opacity=0.4, label="Particle Trajectories")
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.5, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", opacity=0.5, style="wireframe", line_width=2)
-
-    # 4. Load and Add the Map (NO TILING)
+    # --- 2. Determine Domain Dimensions ---
     if map_filepath and os.path.exists(map_filepath):
-        print(f"Loading map from {map_filepath}...")
-        elevation_mat, nx, ny = load_lbm_map(map_filepath)
-        
-        # Generate mesh (X/Y scaled by dx, Z scaled by 1.0 because height is in meters)
-        building_mesh = create_voxel_buildings(elevation_mat, nx, ny, resolution=dx)
-        
-        if building_mesh:
-            plotter.add_mesh(building_mesh, color="lightgray", opacity=1.0, 
-                             show_edges=True, edge_color="darkgray", label="Buildings")
-            print("Map loaded and added to scene.")
+        elevation_mat, nx_map, ny_map = load_lbm_map(map_filepath)
+        x_domain_max = nx_map * dx
+        y_domain_max = ny_map * dx
+    else:
+        elevation_mat, nx_map, ny_map = None, None, None
+        x_domain_max = np.max(all_points[:, 0]) + 10.0
+        y_domain_max = np.max(all_points[:, 1]) + 10.0
 
-        # Add a simple ground plane sized exactly to the map
-        ground = pv.Plane(
-            center=((nx*dx)/2, (ny*dx)/2, 0), 
-            direction=(0, 0, 1), 
-            i_size=nx*dx, 
-            j_size=ny*dx
-        )
-        plotter.add_mesh(ground, color="darkgreen", opacity=0.2)
+    # --- 3. 3D Spatial Binning into voxel_res^3 physical voxels ---
+    x_edges = np.arange(0.0, x_domain_max + voxel_res, voxel_res)
+    y_edges = np.arange(0.0, y_domain_max + voxel_res, voxel_res)
+    z_edges = np.arange(0.0, z_max + voxel_res, voxel_res)
 
-    # 5. Configure Camera and Lighting
-    plotter.camera_position = 'iso'
-    plotter.show_grid(
-        font_size=10, 
-        fmt="%.0f", 
-        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
+    raw_hist, _ = np.histogramdd(
+        all_points,
+        bins=(x_edges, y_edges, z_edges)
     )
-    plotter.add_legend()
-
-    # 6. Save output logic
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    snap_counter = [1] 
-
-    def take_snap():
-        base_name, ext = os.path.splitext(save_path)
-        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        plotter.screenshot(unique_save_path)
-        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        snap_counter[0] += 1
-
-    plotter.add_key_event('s', take_snap)
-
-    print("Interactive window opened.")
-    plotter.show()
+    return raw_hist, total_samples, elevation_mat, nx_map, ny_map, x_domain_max, y_domain_max
 
 
 def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", crop_approach=True, x_start=3072.0):
@@ -138,50 +80,29 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
        print("[ERROR] No trajectories available.")
        return
 
-    # --- 1. Pool all 3D trajectory points ---
-    all_points = np.vstack([coords for coords in trajectories.values() if len(coords) > 0])
-    total_samples = len(all_points)
-
-    # --- 2. Determine Domain Dimensions ---
-    if map_filepath and os.path.exists(map_filepath):
-        elevation_mat, nx_map, ny_map = load_lbm_map(map_filepath)
-        x_domain_max = nx_map * dx
-        y_domain_max = ny_map * dx
-    else:
-        elevation_mat = None
-        x_domain_max = np.max(all_points[:, 0]) + 10.0
-        y_domain_max = np.max(all_points[:, 1]) + 10.0
-
-    # --- 3. 3D Spatial Binning & Smoothing into 8x8x8 physical voxels ---
-    x_edges = np.arange(0.0, x_domain_max + voxel_res, voxel_res)
-    y_edges = np.arange(0.0, y_domain_max + voxel_res, voxel_res)
-    z_edges = np.arange(0.0, z_max + voxel_res, voxel_res)
-
-    raw_hist, _ = np.histogramdd(
-        all_points,
-        bins=(x_edges, y_edges, z_edges)
-    )
+    (raw_hist, total_samples, elevation_mat, nx_map, ny_map,
+     x_domain_max, y_domain_max) = _bin_trajectories(trajectories, map_filepath, dx, voxel_res, z_max)
 
     voxel_volume = voxel_res ** 3
 
-    # --- 4. Compute True Physical Density ---
+    # Apply 3D Gaussian blur across 8m voxel units
+    if sigma > 0.0:
+        smoothed_hist = gaussian_filter(raw_hist.astype(np.float32), sigma=sigma)
+    else:
+        smoothed_hist = raw_hist.astype(np.float32)
+
+    # --- 4. Compute True Physical Density (on the smoothed field) ---
     if density_mode == "pdf":
         # 3D probability density function [m^-3] (Integrates to 1.0)
-        volume_3d = raw_hist / (total_samples * voxel_volume)
+        volume_3d = smoothed_hist / (total_samples * voxel_volume)
         unit_title = "3D Probability Density [m^-3]"
     elif density_mode == "concentration":
         # Volumetric Point Density [points/m^3]
-        volume_3d = raw_hist / voxel_volume
+        volume_3d = smoothed_hist / voxel_volume
         unit_title = "Particle Density [pts/m^3]"
     else:
-        volume_3d = raw_hist.astype(np.float32)
+        volume_3d = smoothed_hist
         unit_title = "Raw Counts"
-
-    # Apply 3D Gaussian blur across 8m voxel units
-    if sigma > 0.0:
-        volume_3d = gaussian_filter(raw_hist.astype(np.float32), sigma=sigma)
-    else:
-        volume_3d = raw_hist.astype(np.float32)
 
     # Outlier suppression (clipping to 99th percentile of non-zero cells)
     active_cells = volume_3d[volume_3d > 0.0]
@@ -216,47 +137,21 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
 
     # A. Add Buildings & Ground Plane
     if elevation_mat is not None:
-        building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
-        if building_mesh:
-            if crop_approach:
-                building_mesh=building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
-            plotter.add_mesh(
-                building_mesh,
-                color="lightgray",
-                show_edges=True,
-                edge_color="darkgray",
-                opacity=1.0,
-                label="Buildings"
-            )
-
-        if crop_approach:
-            x_len = x_domain_max - x_start
-            ground = pv.Plane(
-                center=(x_start + x_len / 2.0, y_domain_max / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_len,
-                j_size=y_domain_max
-            )
-
-        else:
-            ground = pv.Plane(
-                center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_domain_max,
-                j_size=y_domain_max
-            )
-        plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
+        add_voxel_buildings(plotter, elevation_mat, nx_map, ny_map, dx, opacity=1.0,
+                            crop_approach=crop_approach, x_start=x_start)
+        add_ground_plane(plotter, x_domain_max, y_domain_max,
+                         crop_approach=crop_approach, x_start=x_start, opacity=0.15)
 
     # B. Add Direct Volume Rendering (DVR)
     # Piecewise opacity: completely transparent at 0, ramps up in dense cores
     cloud_opacity = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 
-    
+
     plotter.add_volume(
-        density_grid, 
-        scalars="Density", 
+        density_grid,
+        scalars="Density",
         cmap="plasma",
-        opacity=cloud_opacity, 
+        opacity=cloud_opacity,
         clim=[min_thresh, p99_max],
         mapper="smart",
         show_scalar_bar=True,
@@ -264,40 +159,16 @@ def plot_density_cloud_with_sensor(trajectories, sensor_center, sensor_size, sav
     )
 
     # C. Add Sensor Bounding Box
-    cx, cy, cz = sensor_center
-    sx, sy, sz = sensor_size
-    bounds = [
-        cx - sx / 2.0, cx + sx / 2.0,
-        cy - sy / 2.0, cy + sy / 2.0,
-        cz - sz / 2.0, cz + sz / 2.0
-    ]
-    sensor_box = pv.Box(bounds=bounds)
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.4, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", style="wireframe", line_width=2.5)
+    add_sensor_box(plotter, sensor_center, sensor_size, surface_opacity=0.4, line_width=2.5)
 
     # --- 6. Environment & Camera Controls ---
     plotter.set_background("white")
     plotter.add_axes()
-    plotter.camera_position = 'iso'
-    plotter.show_grid(
-        font_size=10, 
-        fmt="%.0f", 
-        xtitle="X [m]", ytitle="Y [m]", ztitle="Z [m]"
-    )
+    show_iso_grid(plotter)
     plotter.add_legend()
 
     # Screenshot callback ('s' key)
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    snap_counter = [1]
-
-    def take_snap():
-        base_name, ext = os.path.splitext(save_path)
-        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        plotter.screenshot(unique_save_path)
-        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        snap_counter[0] += 1
-
-    plotter.add_key_event('s', take_snap)
+    add_snapshot_key(plotter, save_path)
     print("Interactive window opened. Press 's' to save a screenshot.")
     plotter.show()
 
@@ -317,13 +188,13 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     for p_id, coords in trajectories.items():
         if len(coords) < 2:  # Need at least 2 points to draw a line
             continue
-            
+
         start_idx = len(points)
-        
+
         # Keep coordinates EXACTLY as they are (already in meters)
         scaled_coords = [(float(x), float(y), float(z)) for x, y, z in coords]
         points.extend(scaled_coords)
-        
+
         # PyVista line format: [number_of_points, index1, index2, ...]
         lines.append(len(coords))
         lines.extend(range(start_idx, start_idx + len(coords)))
@@ -331,68 +202,31 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
     poly = pv.PolyData(points)
     poly.lines = lines
 
-    # 2. Define the Sensor Box bounds (Already in meters!)
-    cx, cy, cz = sensor_center 
-    sx, sy, sz = sensor_size
-
-    bounds = [
-        cx - sx/2, cx + sx/2,  # X min, X max
-        cy - sy/2, cy + sy/2,  # Y min, Y max
-        cz - sz/2, cz + sz/2   # Z min, Z max
-    ]
-    sensor_box = pv.Box(bounds=bounds)
-
-    # 3. Setup the PyVista Plotter
+    # 2. Setup the PyVista Plotter
     plotter = pv.Plotter(off_screen=False)
-    
-    # Add Trajectories and Sensor
-    plotter.add_mesh(poly, color="cyan", line_width=0.4, opacity=0.4, label="Particle Trajectories")
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.5, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", opacity=0.5, style="wireframe", line_width=2)
 
-    # 4. Load and Add the Map (NO TILING)
+    # Add Trajectories and Sensor (sensor parameters already in meters)
+    plotter.add_mesh(poly, color="cyan", line_width=0.4, opacity=0.4, label="Particle Trajectories")
+    add_sensor_box(plotter, sensor_center, sensor_size, surface_opacity=0.5, line_width=2, wire_opacity=0.5)
+
+    # 3. Load and Add the Map (NO TILING)
     if map_filepath and os.path.exists(map_filepath):
         print(f"Loading map from {map_filepath}...")
         elevation_mat, nx, ny = load_lbm_map(map_filepath)
-        
+
         # Generate mesh (X/Y scaled by dx, Z scaled by 1.0 because height is in meters)
-        building_mesh = create_voxel_buildings(elevation_mat, nx, ny, resolution=dx)
-        
-        if building_mesh:
-            plotter.add_mesh(building_mesh, color="lightgray", opacity=1.0, 
-                             show_edges=True, edge_color="darkgray", label="Buildings")
+        if add_voxel_buildings(plotter, elevation_mat, nx, ny, dx, opacity=1.0):
             print("Map loaded and added to scene.")
 
         # Add a simple ground plane sized exactly to the map
-        ground = pv.Plane(
-            center=((nx*dx)/2, (ny*dx)/2, 0), 
-            direction=(0, 0, 1), 
-            i_size=nx*dx, 
-            j_size=ny*dx
-        )
-        plotter.add_mesh(ground, color="darkgreen", opacity=0.2)
+        add_ground_plane(plotter, nx * dx, ny * dx, opacity=0.2)
 
-    # 5. Configure Camera and Lighting
-    plotter.camera_position = 'iso'
-    plotter.show_grid(
-        font_size=10, 
-        fmt="%.0f", 
-        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
-    )
+    # 4. Configure Camera and Lighting
+    show_iso_grid(plotter)
     plotter.add_legend()
 
-    # 6. Save output logic
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    snap_counter = [1] 
-
-    def take_snap():
-        base_name, ext = os.path.splitext(save_path)
-        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        plotter.screenshot(unique_save_path)
-        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        snap_counter[0] += 1
-
-    plotter.add_key_event('s', take_snap)
+    # 5. Save output logic
+    add_snapshot_key(plotter, save_path)
 
     print("Interactive window opened.")
     plotter.show()
@@ -400,36 +234,36 @@ def plot_trajectories_with_sensor(trajectories, sensor_center, sensor_size, save
 
 def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size, save_path, map_filepath=None, dx=2.0, dz=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", cumulative_levels=[0.50, 0.80, 0.95], manual_thresholds=None,  shell_opacity=0.45, crop_approach=True, x_start=3072.0):
     """
-    Bins Lagrangian trajectories into an 8x8x8m 3D grid and extracts nested 
+    Bins Lagrangian trajectories into an 8x8x8m 3D grid and extracts nested
     continuous 3D isopleth shells (enclosed probability/mass envelopes).
+    Opens an interactive window ('s' saves a screenshot).
+    """
+    plotter = pv.Plotter(off_screen=False)
+    if not add_density_isopleths(plotter, trajectories, sensor_center, sensor_size, map_filepath, dx,
+                                 voxel_res, sigma, z_max, density_mode, cumulative_levels,
+                                 manual_thresholds, shell_opacity, crop_approach, x_start):
+        plotter.close()
+        return
+
+    # Screenshot callback ('s' key)
+    add_snapshot_key(plotter, save_path)
+    print("Interactive window opened. Press 's' to save a screenshot.")
+    plotter.show()
+
+
+def add_density_isopleths(plotter, trajectories, sensor_center, sensor_size, map_filepath=None, dx=2.0, voxel_res=8.0, sigma=0.8, z_max=160.0, density_mode="pdf", cumulative_levels=[0.50, 0.80, 0.95], manual_thresholds=None, shell_opacity=0.45, crop_approach=True, x_start=3072.0, bar_title=None):
+    """
+    Draws the isopleth scene (buildings, shells, sensor box, grid) into the active
+    renderer of `plotter`, so it also works in one subplot of a side-by-side plotter.
+    bar_title overrides the scalar-bar title (needed when two subplots share a plotter).
+    Returns False when there is nothing to draw.
     """
     if not trajectories:
        print("[ERROR] No trajectories available.")
-       return
+       return False
 
-    # --- 1. Pool all 3D trajectory points ---
-    all_points = np.vstack([coords for coords in trajectories.values() if len(coords) > 0])
-    total_samples = len(all_points)
-
-    # --- 2. Determine Domain Dimensions ---
-    if map_filepath and os.path.exists(map_filepath):
-        elevation_mat, nx_map, ny_map = load_lbm_map(map_filepath)
-        x_domain_max = nx_map * dx
-        y_domain_max = ny_map * dx
-    else:
-        elevation_mat = None
-        x_domain_max = np.max(all_points[:, 0]) + 10.0
-        y_domain_max = np.max(all_points[:, 1]) + 10.0
-
-    # --- 3. 3D Spatial Binning & Smoothing into 8x8x8 physical voxels ---
-    x_edges = np.arange(0.0, x_domain_max + voxel_res, voxel_res)
-    y_edges = np.arange(0.0, y_domain_max + voxel_res, voxel_res)
-    z_edges = np.arange(0.0, z_max + voxel_res, voxel_res)
-
-    raw_hist, _ = np.histogramdd(
-        all_points,
-        bins=(x_edges, y_edges, z_edges)
-    )
+    (raw_hist, total_samples, elevation_mat, nx_map, ny_map,
+     x_domain_max, y_domain_max) = _bin_trajectories(trajectories, map_filepath, dx, voxel_res, z_max)
 
     voxel_volume = voxel_res ** 3
 
@@ -479,43 +313,15 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
         contours = point_grid.contour(isosurfaces=isosurface_values, scalars="Density")
     except Exception as e:
         print(f"[ERROR] Failed to extract contours: {e}")
-        return
+        return False
 
     # --- 7. Assemble Scene ---
-    plotter = pv.Plotter(off_screen=False)
-
     # A. Add Buildings & Ground Plane
     if elevation_mat is not None:
-        building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
-        if building_mesh:
-            if crop_approach:
-                building_mesh=building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
-            plotter.add_mesh(
-                building_mesh,
-                color="lightgray",
-                show_edges=True,
-                edge_color="darkgray",
-                opacity=1.0,
-                label="Buildings"
-            )
-
-        if crop_approach:
-            x_len = x_domain_max - x_start
-            ground = pv.Plane(
-                center=(x_start + x_len / 2.0, y_domain_max / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_len,
-                j_size=y_domain_max
-            )
-
-        else:
-            ground = pv.Plane(
-                center=(x_domain_max / 2.0, y_domain_max / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_domain_max,
-                j_size=y_domain_max
-            )
-        plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
+        add_voxel_buildings(plotter, elevation_mat, nx_map, ny_map, dx, opacity=1.0,
+                            crop_approach=crop_approach, x_start=x_start)
+        add_ground_plane(plotter, x_domain_max, y_domain_max,
+                         crop_approach=crop_approach, x_start=x_start, opacity=0.15)
 
     # B. Add 3D Isosurface shells
     if crop_approach and contours.n_points > 0:
@@ -528,47 +334,19 @@ def plot_density_isopleths_with_sensor(trajectories, sensor_center, sensor_size,
         opacity=shell_opacity,
         smooth_shading=True,
         show_scalar_bar=True,
-        scalar_bar_args={"title": unit_title, "fmt": "%.2e"},
+        scalar_bar_args={"title": bar_title or unit_title, "fmt": "%.2e"},
         label="Contributing Isopleths"
     )
 
     # C. Add Sensor Bounding Box
-    cx, cy, cz = sensor_center
-    sx, sy, sz = sensor_size
-    bounds = [
-        cx - sx / 2.0, cx + sx / 2.0,
-        cy - sy / 2.0, cy + sy / 2.0,
-        cz - sz / 2.0, cz + sz / 2.0
-    ]
-    sensor_box = pv.Box(bounds=bounds)
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.4, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", style="wireframe", line_width=2.5)
+    add_sensor_box(plotter, sensor_center, sensor_size, surface_opacity=0.4, line_width=2.5)
 
     # --- 8. Environment & Camera Controls ---
     plotter.set_background("white")
     plotter.add_axes()
-    plotter.camera_position = 'iso'
-    plotter.show_grid(
-        font_size=10, 
-        fmt="%.0f", 
-        xtitle="X [m]", ytitle="Y [m]", ztitle="Z [m]"
-    )
+    show_iso_grid(plotter)
     plotter.add_legend()
-
-    # Screenshot callback ('s' key)
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    snap_counter = [1]
-
-    def take_snap():
-        base_name, ext = os.path.splitext(save_path)
-        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        plotter.screenshot(unique_save_path)
-        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        snap_counter[0] += 1
-
-    plotter.add_key_event('s', take_snap)
-    print("Interactive window opened. Press 's' to save a screenshot.")
-    plotter.show()
+    return True
 
 
 def plot_particles_with_velocity(
@@ -583,34 +361,38 @@ def plot_particles_with_velocity(
     map_filepath=None,
     dx=2.0,
     crop_approach=False,
-    x_start=3072.0 
+    x_start=3072.0
 ):
     """
     Renders 3D particles colored by instantaneous velocity components or kinetic energy.
     Supported scalar_field values: 'u', 'v', 'w', 'vel_mag', 'tke_sgs', 'w_total'
+    Opens an interactive window ('s' saves a screenshot).
     """
-    if particle_df is None or len(particle_df) == 0:
-        print("[ERROR] No particle data provided to plot.")
+    plotter = pv.Plotter(off_screen=False)
+    n_points = add_particles_with_velocity(
+        plotter, particle_df, sensor_center, sensor_size, scalar_field, display_mode,
+        point_size, stride, map_filepath, dx, crop_approach, x_start)
+    if not n_points:
+        plotter.close()
         return
 
-    #1. Subsample points if needed for interactive performance
-    if stride > 1:
-        particle_df = particle_df.gather_every(stride)
+    add_snapshot_key(plotter, save_path)
+    print(f"Interactive window opened. Rendering {n_points:,} particle points. Press 's' to capture view.")
+    plotter.show()
 
-    if crop_approach:
-        particle_df = particle_df.filter(pl.col("x") >= x_start)
 
-    # 2. Extract coordinates
-    pts = np.column_stack((
-        particle_df["x"].to_numpy(),
-        particle_df["y"].to_numpy(),
-        particle_df["z"].to_numpy()
-    ))
-
-    # 3. Compute requested scalar field and select colormap
-    u = particle_df["u"].to_numpy()
-    v = particle_df["v"].to_numpy()
-    w = particle_df["w"].to_numpy()
+def velocity_scalars(particle_df, scalar_field):
+    """
+    Returns (scalars, cmap, bar_title, clim) for one scalar_field of a velocity frame
+    from load_trajectories_with_velocities.
+    u, v, w = resolved (grid-scale); *_total = what the particle moves with (resolved + SGS).
+    """
+    u = particle_df["u_res"].to_numpy()
+    v = particle_df["v_res"].to_numpy()
+    w = particle_df["w_res"].to_numpy()
+    u_total = particle_df["u"].to_numpy()
+    v_total = particle_df["v"].to_numpy()
+    w_total = particle_df["w"].to_numpy()
     u_sgs = particle_df["u_sgs"].to_numpy()
     v_sgs = particle_df["v_sgs"].to_numpy()
     w_sgs = particle_df["w_sgs"].to_numpy()
@@ -633,7 +415,7 @@ def plot_particles_with_velocity(
         max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
         clim = [-max_abs, max_abs]
     elif scalar_field == "w_total":
-        scalars = w + w_sgs
+        scalars = w_total
         cmap = "coolwarm"
         bar_title = "Total Vertical w [m/s]"
         max_abs = max(abs(np.percentile(scalars, 2)), abs(np.percentile(scalars, 98)))
@@ -644,15 +426,59 @@ def plot_particles_with_velocity(
         bar_title = "SGS TKE [m$^2$/s$^2$]"
         clim = [0.0, np.percentile(scalars, 99)]
     elif scalar_field == "vel_mag":
-        # u_tot = u + u_sgs
-        # v_tot = v + v_sgs
-        # w_tot = w + w_sgs
-        scalars = np.sqrt(u**2 + v**2 + w**2)
+        scalars = np.sqrt(u_total**2 + v_total**2 + w_total**2)
         cmap = "plasma"
         bar_title = "Velocity Magnitude |U| [m/s]"
         clim = [0.0, np.percentile(scalars, 99)]
     else:
         raise ValueError(f"Unknown scalar_field: {scalar_field}")
+    return scalars, cmap, bar_title, clim
+
+
+def add_particles_with_velocity(
+    plotter,
+    particle_df,
+    sensor_center,
+    sensor_size,
+    scalar_field="vel_mag",
+    display_mode="points",
+    point_size=4.0,
+    stride=1,
+    map_filepath=None,
+    dx=2.0,
+    crop_approach=False,
+    x_start=3072.0,
+    clim=None,
+    bar_title=None
+):
+    """
+    Draws the velocity-coloured particle scene into the active renderer of `plotter`,
+    so it also works in one subplot of a side-by-side plotter.
+    clim / bar_title override the colour range and scalar-bar title (e.g. one shared
+    range for two cases). Returns the number of points drawn (0 = nothing drawn).
+    """
+    if particle_df is None or len(particle_df) == 0:
+        print("[ERROR] No particle data provided to plot.")
+        return 0
+
+    #1. Subsample points if needed for interactive performance
+    if stride > 1:
+        particle_df = particle_df.gather_every(stride)
+
+    if crop_approach:
+        particle_df = particle_df.filter(pl.col("x") >= x_start)
+
+    # 2. Extract coordinates
+    pts = np.column_stack((
+        particle_df["x"].to_numpy(),
+        particle_df["y"].to_numpy(),
+        particle_df["z"].to_numpy()
+    ))
+
+    # 3. Compute requested scalar field and select colormap
+    scalars, cmap, default_title, default_clim = velocity_scalars(particle_df, scalar_field)
+    clim = clim if clim is not None else default_clim
+    bar_title = bar_title or default_title
 
     # 4. Construct PyVista PolyData
     poly = pv.PolyData(pts)
@@ -663,7 +489,7 @@ def plot_particles_with_velocity(
         particle_ids = particle_df["id"].to_numpy()
         unique_ids, split_indices = np.unique(particle_ids, return_index=True)
         id_groups = np.split(np.arange(len(pts)), split_indices[1:])
-        
+
         line_cells = []
         for group in id_groups:
             if len(group) >= 2:
@@ -671,18 +497,7 @@ def plot_particles_with_velocity(
                 line_cells.extend(group)
         poly.lines = np.array(line_cells)
 
-    # 5. Define Sensor Bounding Box
-    cx, cy, cz = sensor_center
-    sx, sy, sz = sensor_size
-    bounds = [
-        cx - sx / 2.0, cx + sx / 2.0,
-        cy - sy / 2.0, cy + sy / 2.0,
-        cz - sz / 2.0, cz + sz / 2.0
-    ]
-    sensor_box = pv.Box(bounds=bounds)
-
-    # 6. Setup Plotter Scene
-    plotter = pv.Plotter(off_screen=False)
+    # 5. Setup Plotter Scene
     plotter.set_background("white")
 
     # Add Particle Geometry
@@ -711,64 +526,18 @@ def plot_particles_with_velocity(
         )
 
     # Add Sensor Indicator
-    plotter.add_mesh(sensor_box, color="magenta", opacity=0.35, style="surface", label="Sensor Volume")
-    plotter.add_mesh(sensor_box, color="red", opacity=0.8, style="wireframe", line_width=2)
+    add_sensor_box(plotter, sensor_center, sensor_size, surface_opacity=0.35, line_width=2, wire_opacity=0.8)
 
-    # 7. Add Map Geometry
+    # 6. Add Map Geometry
     if map_filepath and os.path.exists(map_filepath):
         elevation_mat, nx_map, ny_map = load_lbm_map(map_filepath)
-        building_mesh = create_voxel_buildings(elevation_mat, nx_map, ny_map, resolution=dx)
-        
-        if building_mesh:
-            if crop_approach:
-                building_mesh = building_mesh.clip(normal='x', origin=(x_start, 0, 0), invert=False)
-            plotter.add_mesh(
-                building_mesh,
-                color="lightgray",
-                opacity=0.9,
-                show_edges=True,
-                edge_color="darkgray",
-                label="Buildings"
-            )
+        add_voxel_buildings(plotter, elevation_mat, nx_map, ny_map, dx, opacity=0.9,
+                            crop_approach=crop_approach, x_start=x_start)
 
         # Snapped Ground Plane
-        x_max_ground = nx_map * dx
-        y_max_ground = ny_map * dx
-        if crop_approach:
-            x_len = x_max_ground - x_start
-            ground = pv.Plane(
-                center=(x_start + x_len / 2.0, y_max_ground / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_len,
-                j_size=y_max_ground
-            )
-        else:
-            ground = pv.Plane(
-                center=(x_max_ground / 2.0, y_max_ground / 2.0, 0.0),
-                direction=(0, 0, 1),
-                i_size=x_max_ground,
-                j_size=y_max_ground
-            )
-        plotter.add_mesh(ground, color="darkgreen", opacity=0.15)
+        add_ground_plane(plotter, nx_map * dx, ny_map * dx,
+                         crop_approach=crop_approach, x_start=x_start, opacity=0.15)
 
-    # 8. Viewport & Screenshot Control
-    plotter.camera_position = 'iso'
-    plotter.show_grid(
-        font_size=10,
-        fmt="%.0f",
-        xtitle='X [m]', ytitle='Y [m]', ztitle='Z [m]'
-    )
-
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    snap_counter = [1]
-
-    def take_snap():
-        base_name, ext = os.path.splitext(save_path)
-        unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
-        plotter.screenshot(unique_save_path)
-        print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
-        snap_counter[0] += 1
-
-    plotter.add_key_event('s', take_snap)
-    print(f"Interactive window opened. Rendering {poly.n_points:,} particle points. Press 's' to capture view.")
-    plotter.show()
+    # 7. Viewport & Screenshot Control
+    show_iso_grid(plotter)
+    return poly.n_points

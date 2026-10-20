@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 # Add project root to path for absolute imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.config_loader import load_json_config
 from plotting_core.profile_plots import plot_advection_vs_fetch, plot_vertical_wind_profile

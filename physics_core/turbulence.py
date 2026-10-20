@@ -69,3 +69,43 @@ def fit_boundary_layer_profile(z_array, u_array, max_fit_height=40.0):
     
     u_star, z0 = popt
     return u_star, z0
+
+def virtual_tower(fields, x, dx=2.0, dz=2.0):
+    """
+    Vertical profiles at streamwise position x [m] from y-averaged XZ fields
+    (load_xz_yav output, arrays indexed [z_idx, x_idx]).
+
+    Returns a dict with "z" [m] (= z_idx * dz) and every available field as a column,
+    plus "sigma_v" (needs vv, vm) and "u_star" (needs uw, um, wm).
+    """
+    any_field = next(iter(fields.values()))
+    x_idx = min(int(x / dx), any_field.shape[1] - 1)
+    profile = {"z": np.arange(any_field.shape[0]) * dz}
+    for name, mat in fields.items():
+        profile[name] = mat[:, x_idx]
+    if "vv" in fields and "vm" in fields:
+        profile["sigma_v"] = calc_sigma_v(profile["vv"], profile["vm"])
+    if all(k in fields for k in ("uw", "um", "wm")):
+        profile["u_star"] = calc_u_star(profile["uw"], profile["um"], profile["wm"])
+    return profile
+
+
+def mean_wind_profile(fields, x_min, dx=2.0, dz=2.0):
+    """
+    Eulerian mean and standard deviation of u, v, w against height, averaged over
+    x >= x_min [m] from y-averaged XZ fields (load_xz_yav with um, vm, wm, uu, vv, ww;
+    uu etc. are raw second moments, so variance = uu - um^2).
+
+    Returns {"z": heights [m] (z_idx * dz), "u_mean", "v_mean", "w_mean", "u_std", "v_std", "w_std"}.
+    *_mean is the x-average of the time/y mean; *_std is the square root of the x-average of the
+    local variance (the spread of the mean across x is not included).
+    Note: cells inside buildings are averaged in as they are stored in the file.
+    """
+    x0 = int(x_min / dx)
+    profile = {"z": np.arange(fields["um"].shape[0]) * dz}
+    for c in ("u", "v", "w"):
+        mean = fields[f"{c}m"][:, x0:]
+        second = fields[f"{c}{c}"][:, x0:]
+        profile[f"{c}_mean"] = np.nanmean(mean, axis=1)
+        profile[f"{c}_std"] = np.sqrt(np.nanmean(calc_reynolds_stress(second, mean), axis=1))
+    return profile

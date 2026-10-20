@@ -1,7 +1,5 @@
 import os
-import sys
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_loaders.particle_io import load_streamed_trajectories
 from plotting_core.particle_3d_plots import plot_density_cloud_with_sensor
