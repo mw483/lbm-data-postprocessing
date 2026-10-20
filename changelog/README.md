@@ -14,6 +14,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-16 | [2026-10-16_map-3d-viewer.md](2026-10-16_map-3d-viewer.md) | Branch `analysis/scalar2-outputs`: 3D viewer for map sets (topography, building, vegetation) with face-only building meshes, crop, picking and source overlay; map reader handles touching Fortran values. Run on the Jakarta map in the cloud only, not on the PC. Follow-up: `--case` reads an LBM-city case's map set through the optional `lbm_cases` path | `08fdcab` `6da5fe3` `facb558` `bb53352` |
 | 2026-10-19 | [2026-10-19_velocity-stress-and-heatmaps.md](2026-10-19_velocity-stress-and-heatmaps.md) | Branch `analysis/scalar2-outputs`: velocity and Reynolds stress profiles per window (as is and / Ub, Chang et al. 2009 style), y-averaged x-z heatmaps of U, W, sigma_w, TKE with shared colour scale, GIF and MP4. Run on copies of real output in the cloud, not on the lab PC | `0abeba0` `70483dd` `bf0f9a7` |
 | 2026-10-19 | [2026-10-19_particle-density-statistics.md](2026-10-19_particle-density-statistics.md) | Branch `analysis/scalar2-outputs`: reader, statistics and script for the C++ particle density outputs (counts to concentration per m^3 per snapshot, C(z), y-mean C(x) with block bands, residence time), convective vs neutral. Run on copies of real output in the cloud, not on the lab PC. Notes a possible rank-boundary jump in near-ground C | `e7260ed` `a50be0f` |
+| 2026-10-20 | [2026-10-20_particle-bin-statistics-animation.md](2026-10-20_particle-bin-statistics-animation.md) | Branch `analysis/scalar2-outputs`: reducer for the raw particle binaries (TSUBAME, Python 3.9, numpy), dispersion against particle age, SGS rank-boundary check, `convective_scales` (z_i, w*), particle animations xz / xy / 3d (port of `particle_visual.m`). Tested on synthetic binaries in the cloud only, not on real data or the PC | `b858366` `4a1c79c` `6e5fdb9` |
 
 ## Glossary
 
@@ -36,6 +37,10 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Window | One 200 s averaging period of the solver statistics; steps like 25001-175001 are the window ends |
 | Ub | Inflow (initial) velocity, 5 m/s in the flat runs; used to normalise the profile figures |
 | Resolved TKE | 0.5 (var_u + var_v + var_w) from the grid-scale variances, no SGS part |
+| Reducer | `scripts/reduce_particle_bins.py`: runs on TSUBAME, turns the raw particle `.bin` files into small `reduced.npz` and snapshot files for the PC |
+| Particle age | Time since release, from the release number in the particle ID. Age in outputs x `dt_output` (0.8 s) |
+| z_i, w* | Mixed-layer depth (height of minimum total heat flux) and convective velocity scale (g / theta0 x surface flux x z_i)^(1/3) |
+| Rank boundary | x = 256, 512, 768 m, where the 4 GPU ranks meet and particles move between ranks over MPI |
 | Editable install | `pip install -e .`: Python imports the repo folders directly, so edits take effect without reinstalling |
 
 ## Inspecting the changes

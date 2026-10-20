@@ -8,7 +8,7 @@ Python port of the old MATLAB particle_visual.m: the same three views, now for s
 Particles are coloured by age [s] (or height with --color z); one colour scale for all frames and cases.
 
 Reads <lbm_results>/<run>/particle_reduced/snapshots/snap_<n>.npz and writes to
-<figures>/particle_animation/<mode>/: frame_<n>.png, animation.gif, animation.mp4 (needs the video extra).
+<figures>/particle_animation/<mode>[_slab<lo>-<hi>]_<color>/ (e.g. xz_age): frame_<n>.png, animation.gif, animation.mp4 (needs the video extra).
 
 Usage:
   python scripts/animate_particles.py --mode xz
