@@ -58,6 +58,11 @@ def particle_postprocess_dir(paths, run):
     return _run_subfolder(paths, run, "particle_postprocess")
 
 
+def particle_reduced_dir(paths, run):
+    """Folder with the output of scripts/reduce_particle_bins.py for one run (reduced.npz, snapshots/)."""
+    return _run_subfolder(paths, run, "particle_reduced")
+
+
 def case_map_dir(paths, case):
     """Map set folder (topography, building, vegetation .dat) of an LBM-city case, e.g. case = "flat_512x128x1024"."""
     return _case_folder(paths, case) / "map"
