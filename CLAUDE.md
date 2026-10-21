@@ -9,3 +9,12 @@ Follow this workflow for every change to this repository:
 3. **Write the changelog after committing.** Once the approved change is committed, run the `changelog-writer` subagent (`.claude/agents/changelog-writer.md`, runs on Sonnet). Give it the commit range and a brief on the goal and the reasons behind each change. Review what it wrote, then commit the changelog files.
 
 The changelog lives in `changelog/`. Its `README.md` indexes every entry.
+
+## Explaining statistics and figures
+
+Every figure or statistic you add, change or present must come with a short explanation (docstring, caption or chat), one line each:
+
+1. **What it measures**, in plain words a non-physicist can follow.
+2. **Why this statistic**: first state the purpose of the analysis (e.g. validation against theory or a historical experiment, comparison between runs, a code check), then the physical question the statistic answers and why it was chosen over alternatives.
+3. **Reference expectation**: the theory, experiment or published value it should match (e.g. Willis & Deardorff tank, Stull 1988), with a citation. Mark anything not checked against the source as [U]. If there is none, say so.
+4. **Units, normalisation and sample**: e.g. /U_b, /w*, /z_i, and the averaging window and region.
