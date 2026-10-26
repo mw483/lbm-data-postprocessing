@@ -34,6 +34,17 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 
 ## Running
 
+### Run sets: which runs a comparison script reads (2026-10-26)
+
+The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files.
+
+```sh
+python -m scripts.plot_particle_bin_stats                       # set named "default" in run_sets.yaml
+python -m scripts.plot_particle_bin_stats --set flat512_sgsfix  # another set
+```
+
+Output goes to `<figures>/<set>/<topic>/` (e.g. `figures/flat512_sgsfix/particle_bins/sgs_along_x.png`), so different sets never overwrite each other. Each output folder gets a `runs.yaml` with the set, its runs, the data folders read, the script, the date and the repo commit. To compare other runs, add a new set to `run_sets.yaml` rather than editing a set that already has figures. Reducer outputs are looked up in `<lbm_reduced>/<run>/particle_reduced` first (optional key in `local_paths.yaml`), then in `<lbm_results>/<run>/particle_reduced`.
+
 ### Presentation demo (2026-10-07)
 
 ```sh
@@ -78,7 +89,7 @@ Run `run_basic.sh` (LBM-city `cases/<case>/`) once per window; each window lands
 python scripts/analyze_particle_density.py   # N(t), C(z), y-mean C(x) with block error bands, xz slab; CSV tables
 ```
 
-The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/particle_density/`.
+The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/<set>/particle_density/` (see Run sets).
 
 ### Raw particle binaries: Lagrangian statistics and animations (2026-10-20)
 
@@ -90,7 +101,7 @@ python3 scripts/reduce_particle_bins.py --bin-dir <particle folder> \
     --out <somewhere>/particle_reduced
 ```
 
-It streams outputs 1200-1800 once and writes `reduced.npz` (age, height and x statistics) and `snapshots/snap_<n>.npz` (every 5th output, a fixed 1/8 of the particles with age). Copy the `particle_reduced` folder to `<lbm_results>/<case>/<date>_<tag>/particle_reduced` on the PC (rclone), then:
+It streams outputs 1200-1800 once and writes `reduced.npz` (age, height and x statistics) and `snapshots/snap_<n>.npz` (every 5th output, a fixed 1/8 of the particles with age). Copy the `particle_reduced` folder to `<lbm_results>/<case>/<date>_<tag>/particle_reduced` on the PC (rclone), or set `lbm_reduced` in `local_paths.yaml` to a root laid out as `<lbm_reduced>/<case>/<date>_<tag>/particle_reduced` (e.g. the TSUBAME mount `Z:/lbm_reduced`), then (add `--set NAME` for another run set):
 
 ```sh
 python scripts/plot_particle_bin_stats.py           # height and sigma_z vs age, PDF(z | age), CBL scaling, particle vs Eulerian sigma_w, SGS along x

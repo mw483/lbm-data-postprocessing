@@ -1,5 +1,6 @@
 """
-Particle concentration statistics from the C++ "basic" post-processing, convective vs neutral.
+Particle concentration statistics from the C++ "basic" post-processing, every run of a run set
+(run_sets.yaml, --set NAME).
 
 Reads <lbm_results>/<run>/particle_postprocess/<start>-<end>_basic/ (one folder per window) and turns the
 summed counts into number concentrations C = count / (snapshots x cell volume) [particles / m^3].
@@ -9,7 +10,7 @@ Windows (outputs, 0.8 s each; release starts at output 1200 = 960 s):
   STEADY_WINDOW  after the convective plume has reached a steady particle number
   BLOCKS         equal sub-windows of STEADY_WINDOW; their spread gives error bars
 
-Writes to <figures>/particle_density/:
+Writes to <figures>/<set>/particle_density/ (with runs.yaml):
   particle_count.png                N(t) of both cases, windows shaded
   concentration_profiles.png        horizontal-mean C(z) per case: full, steady and block windows
   concentration_along_x.png         y-mean C(x) at HEIGHTS: steady window with block min..max band, full dashed
@@ -23,6 +24,7 @@ import numpy as np
 import pandas as pd
 
 from data_loaders.local_paths import load_local_paths, particle_postprocess_dir
+from data_loaders.run_sets import parse_set_args, set_output_dir, write_manifest
 from data_loaders.particle_postprocess import (
     cell_centres, list_density, list_windows, read_density, read_log_settings, read_profile, read_total_num,
 )
@@ -36,11 +38,6 @@ from plotting_core.particle_density_plots import plot_along_x, plot_concentratio
 # =============================================================================
 # Settings
 # =============================================================================
-CASES = {
-    # label: run as "<case>/<date>_<tag>"; particle files in <lbm_results>/<run>/particle_postprocess
-    "convective": "flat_512x128x1024/20261011_scalar2",
-    "neutral": "flat_512x128x1024/20261017_neutral",
-}
 FULL_WINDOW = (1200, 1800)
 STEADY_WINDOW = (1500, 1800)
 BLOCKS = [(1500, 1600), (1600, 1700), (1700, 1800)]   # as run; neighbours share their end output
@@ -172,12 +169,12 @@ def xz_part(cases, out_dir):
 
 
 def main():
+    set_name, runs = parse_set_args(__doc__)
     paths = load_local_paths()
-    out_dir = paths["figures"] / "particle_density"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = set_output_dir(paths, set_name, "particle_density")
     rate = release_rate(RELEASE_PER_OUTPUT, DT_OUTPUT * RELEASE_EVERY)
 
-    cases = {case: load_case(particle_postprocess_dir(paths, run)) for case, run in CASES.items()}
+    cases = {case: load_case(particle_postprocess_dir(paths, run)) for case, run in runs.items()}
     for case, windows in cases.items():
         check_snapshots(case, windows)
 
@@ -193,6 +190,7 @@ def main():
     if along is not None:
         print("Median block CV and spanwise CV of y-mean C over x (steady window):")
         print(along.groupby(["case", "z"])[["block_cv", "spanwise_cv_steady"]].median().round(3).to_string())
+    write_manifest(out_dir, set_name, runs, inputs={k: particle_postprocess_dir(paths, r) for k, r in runs.items()})
     print(f"[SUCCESS] Outputs saved to: {out_dir}")
 
 

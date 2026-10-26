@@ -1,12 +1,12 @@
 """
-Horizontal-mean profiles for every 200 s averaging window, convective vs neutral.
+Horizontal-mean profiles for every 200 s averaging window, every run of a run set (run_sets.yaml, --set NAME).
 
 Reads prof<step>_<rank>.csv (full precision, already averaged over each rank's xy area and over the
 window), averages the ranks, converts raw moments to central moments (physics_core/moments.py) and
 plots:
   1. per case, one line per window (darker = later), to see when the profiles stop changing;
   2. the last common window of all cases on top of each other.
-Writes the per-window statistics as CSV next to the figures.
+Writes the per-window statistics as CSV next to the figures, in <figures>/<set>/profiles/ with runs.yaml.
 """
 
 import matplotlib.pyplot as plt
@@ -14,17 +14,13 @@ import pandas as pd
 
 from data_loaders.lbm_output import domain_profile, list_steps, load_prof
 from data_loaders.local_paths import load_local_paths, wind_dir
+from data_loaders.run_sets import parse_set_args, set_output_dir, write_manifest
 from physics_core.moments import profile_moments
 from plotting_core.profile_plots import plot_profile_panels
 
 # =============================================================================
 # Settings
 # =============================================================================
-CASES = {
-    # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
-    "convective": "flat_512x128x1024/20261011_scalar2",
-    "neutral": "flat_512x128x1024/20261017_neutral",
-}
 QUANTITIES = [
     # (column of physics_core.moments.profile_moments, axis label)
     ("U", "U [m/s]"),
@@ -48,12 +44,12 @@ def window_profiles(run_dir):
 
 
 def main():
+    set_name, runs = parse_set_args(__doc__)
     paths = load_local_paths()
-    out_dir = paths["figures"] / "scalar2_outputs" / "profiles"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = set_output_dir(paths, set_name, "profiles")
 
     by_case = {}
-    for label, folder in CASES.items():
+    for label, folder in runs.items():
         windows = window_profiles(wind_dir(paths, folder))
         if not windows:
             raise FileNotFoundError(f"[ERROR] no prof*.csv in {folder}")
@@ -81,6 +77,7 @@ def main():
         print(f"[SUCCESS] Figure saved to: {save}")
     elif len(by_case) > 1:
         print("[WARN] the cases share no output step; no comparison figure")
+    write_manifest(out_dir, set_name, runs, inputs={k: wind_dir(paths, r) for k, r in runs.items()})
 
 
 if __name__ == "__main__":

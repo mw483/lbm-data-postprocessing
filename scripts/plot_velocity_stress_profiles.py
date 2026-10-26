@@ -5,22 +5,19 @@ x direction (U, <u'u'>), y direction (V, <v'v'>), z direction (W, <w'w'>), plus 
 Domain-mean profiles from prof<step>_<rank>.csv (full precision; ranks averaged, raw moments turned into
 central moments). One figure per averaging window that all cases share, cases overlaid, written twice:
 as is [m/s, m^2/s^2] and normalised by the inflow velocity Ub (U/Ub, stress/Ub^2).
+Cases = the runs of a run set (run_sets.yaml, --set NAME); output in <figures>/<set>/velocity_stress_profiles/.
 """
 import pandas as pd
 
 from data_loaders.lbm_output import domain_profile, list_steps, load_prof, read_header_txt
 from data_loaders.local_paths import load_local_paths, wind_dir
+from data_loaders.run_sets import parse_set_args, set_output_dir, write_manifest
 from physics_core.moments import profile_moments
 from plotting_core.profile_plots import plot_profile_grid
 
 # =============================================================================
 # Settings
 # =============================================================================
-CASES = {
-    # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
-    "convective": "flat_512x128x1024/20261011_scalar2",
-    "neutral": "flat_512x128x1024/20261017_neutral",
-}
 UB = 5.0                # inflow (initial) velocity [m/s] used for the normalised figure
 ZMAX = 1000.0           # top of the plots [m]
 # Panels: (column of profile_moments, axis label, power of Ub it is divided by in the normalised figure)
@@ -51,11 +48,11 @@ def panel_rows(normalised):
 
 
 def main():
+    set_name, run_names = parse_set_args(__doc__)
     paths = load_local_paths()
-    out_dir = paths["figures"] / "scalar2_outputs" / "velocity_stress_profiles"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = set_output_dir(paths, set_name, "velocity_stress_profiles")
 
-    runs = {label: wind_dir(paths, run) for label, run in CASES.items()}
+    runs = {label: wind_dir(paths, run) for label, run in run_names.items()}
     steps = sorted(set.intersection(*(set(list_steps(d, "prof")) for d in runs.values())))
     if not steps:
         raise FileNotFoundError("[ERROR] the cases share no prof*.csv output step")
@@ -79,6 +76,7 @@ def main():
     save = out_dir / "velocity_stress_profiles.csv"
     pd.concat(tables, ignore_index=True).to_csv(save, index=False)
     print(f"[SUCCESS] Table saved to: {save}")
+    write_manifest(out_dir, set_name, run_names, inputs=runs)
 
 
 if __name__ == "__main__":
