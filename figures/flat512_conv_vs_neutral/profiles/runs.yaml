@@ -1,0 +1,10 @@
+set: flat512_conv_vs_neutral
+runs:
+  convective: flat_512x128x1024/20261011_scalar2
+  neutral: flat_512x128x1024/20261017_neutral
+inputs:
+  convective: <lbm_results>/flat_512x128x1024/20261011_scalar2/output
+  neutral: <lbm_results>/flat_512x128x1024/20261017_neutral/output
+script: plot_profiles_by_window.py
+written: before run sets; moved from figures/scalar2_outputs/profiles on 2026-10-26
+repo_commit: 285fdb2 (commit that added these files)
