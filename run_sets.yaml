@@ -22,4 +22,4 @@ sets:
     description: flat 512x128x1024 convective, before and after the particle SGS MPI fix (LBM-city d154fd2)
     runs:
       convective_old: flat_512x128x1024/20261011_scalar2
-      convective_sgsfix: flat_512x128x1024/20261026_scalar2
+      convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix

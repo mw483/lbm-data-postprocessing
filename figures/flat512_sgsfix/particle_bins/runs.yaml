@@ -1,10 +1,10 @@
 set: flat512_sgsfix
 runs:
   convective_old: flat_512x128x1024/20261011_scalar2
-  convective_sgsfix: flat_512x128x1024/20261026_scalar2
+  convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix
 inputs:
-  convective_old: Z:\lbm_reduced\flat_512x128x1024\20261011_scalar2\particle_reduced
-  convective_sgsfix: Z:\lbm_reduced\flat_512x128x1024\20261026_scalar2\particle_reduced
+  convective_old: D:\lbm_results\flat_512x128x1024\20261011_scalar2\particle_reduced
+  convective_sgsfix: D:\lbm_results\flat_512x128x1024\20261026_scalar2_sgsfix\particle_reduced
 script: plot_particle_bin_stats.py
-written: '2026-10-26T11:59:56'
-repo_commit: 3c490ed
+written: '2026-10-26T14:22:14'
+repo_commit: 50dc6ac+dirty
