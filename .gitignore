@@ -23,3 +23,6 @@ desktop.ini
 # Per-machine settings and caches
 local_paths.yaml
 cache/
+
+# Archived figures
+figures/archive
