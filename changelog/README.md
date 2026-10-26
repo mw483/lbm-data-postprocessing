@@ -16,6 +16,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-19 | [2026-10-19_particle-density-statistics.md](2026-10-19_particle-density-statistics.md) | Branch `analysis/scalar2-outputs`: reader, statistics and script for the C++ particle density outputs (counts to concentration per m^3 per snapshot, C(z), y-mean C(x) with block bands, residence time), convective vs neutral. Run on copies of real output in the cloud, not on the lab PC. Notes a possible rank-boundary jump in near-ground C | `e7260ed` `a50be0f` |
 | 2026-10-20 | [2026-10-20_particle-bin-statistics-animation.md](2026-10-20_particle-bin-statistics-animation.md) | Branch `analysis/scalar2-outputs`: reducer for the raw particle binaries (TSUBAME, Python 3.9, numpy), dispersion against particle age, SGS rank-boundary check, `convective_scales` (z_i, w*), particle animations xz / xy / 3d (port of `particle_visual.m`). Tested on synthetic binaries in the cloud only, not on real data or the PC | `b858366` `4a1c79c` `6e5fdb9` |
 | 2026-10-21 | [2026-10-21_explain-statistics-rule.md](2026-10-21_explain-statistics-rule.md) | CLAUDE.md: new section "Explaining statistics and figures": every figure or statistic comes with what it measures, why this statistic (purpose of the analysis first), reference expectation with citation ([U] if unchecked), and units, normalisation and sample. No code changed | `47ddbb3` |
+| 2026-10-26 | [2026-10-26_run-sets.md](2026-10-26_run-sets.md) | Branch `analysis/scalar2-outputs`: named run sets in `run_sets.yaml`, `--set NAME` on seven comparison scripts, outputs in `<figures>/<set>/<topic>/` with a `runs.yaml` manifest, optional `lbm_reduced` root, 514 figures moved to `figures/flat512_conv_vs_neutral/`, CBL-scaled figure holds all runs. Tested on synthetic data in the cloud for one script; others lint-checked only | `b221977` `e36036e` `e3742d7` |
 
 ## Glossary
 
@@ -43,6 +44,8 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | z_i, w* | Mixed-layer depth (height of minimum total heat flux) and convective velocity scale (g / theta0 x surface flux x z_i)^(1/3) |
 | Rank boundary | x = 256, 512, 768 m, where the 4 GPU ranks meet and particles move between ranks over MPI |
 | Editable install | `pip install -e .`: Python imports the repo folders directly, so edits take effect without reinstalling |
+| Run set | Named group of runs in `run_sets.yaml` (any number, order = colour order) that a comparison script reads with `--set NAME`; outputs go to `<figures>/<set>/<topic>/` |
+| Manifest | `runs.yaml` in an output folder: set, runs, data folders read, script, date and repo commit |
 
 ## Inspecting the changes
 
