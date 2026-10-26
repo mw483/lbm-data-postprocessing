@@ -36,7 +36,7 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 
 ### Run sets: which runs a comparison script reads (2026-10-26)
 
-The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files.
+The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `compare_window_scatter`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files.
 
 ```sh
 python -m scripts.plot_particle_bin_stats                       # set named "default" in run_sets.yaml
@@ -73,6 +73,7 @@ Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at 
 ```sh
 python scripts/inventory_lbm_output.py      # which files, steps and ranks exist; stitch check of every plane
 python scripts/plot_profiles_by_window.py   # mean, sigma_w, TKE, S_w, theta, w'theta' per 200 s window; cases compared
+python scripts/compare_window_scatter.py --set flat512_sgsfix   # run-to-run spread vs window-to-window change (is a gap more than window noise?)
 python scripts/plot_velocity_stress_profiles.py   # U, V, W and <u'u'>, <v'v'>, <w'w'>, <u'w'> per window, as is and / Ub (Chang et al. 2009 style)
 python scripts/plot_xz_yav_heatmaps.py      # y-averaged x-z heatmaps of U, W, sigma_w, TKE per window; PNG frames, GIF, MP4
 ```
