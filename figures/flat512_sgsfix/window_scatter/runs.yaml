@@ -1,0 +1,10 @@
+set: flat512_sgsfix
+runs:
+  convective_old: flat_512x128x1024/20261011_scalar2
+  convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix
+inputs:
+  convective_old: D:\lbm_results\flat_512x128x1024\20261011_scalar2\output
+  convective_sgsfix: D:\lbm_results\flat_512x128x1024\20261026_scalar2_sgsfix\output
+script: compare_window_scatter.py
+written: '2026-10-26T16:23:15'
+repo_commit: c8449d5
