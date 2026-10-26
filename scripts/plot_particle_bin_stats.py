@@ -3,7 +3,7 @@ Lagrangian particle statistics from reduce_particle_bins.py output, every run of
 
 Reads <run>/particle_reduced/reduced.npz below lbm_reduced or lbm_results (copy of the folder written on
 TSUBAME) and the solver profiles in <lbm_results>/<run>/output for the Eulerian comparison (a run without
-that folder is left out of the Eulerian lines only). Writes to <figures>/<set>/particle_bins/:
+that folder, or any run when lbm_results is not set, is left out of the Eulerian lines only). Writes to <figures>/<set>/particle_bins/:
   dispersion_vs_age.png       mean height, sigma_z, mean downwind travel, sigma_x against particle age
   dispersion_vs_age_cbl.png   runs with a convective scale, each scaled by its own z_i and w*
   z_pdf_vs_age.png            PDF of particle height at each age (log colour), mean height in white
@@ -83,6 +83,10 @@ def main():
     # Eulerian profiles and convective scaling --------------------------------------------------
     euler = {}
     for case, run in runs.items():
+        if "lbm_results" not in paths:
+            print(f"[WARNING] {case}: lbm_results not set in local_paths.yaml; left out of the Eulerian and "
+                  "CBL-scaled lines")
+            continue
         if not wind_dir(paths, run).is_dir():
             print(f"[WARNING] {case}: no {wind_dir(paths, run)}; left out of the Eulerian and CBL-scaled lines")
             continue
