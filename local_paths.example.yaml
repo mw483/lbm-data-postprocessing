@@ -38,3 +38,9 @@ figures: figures
 #   Lab PC:  C:/Users/Mikael Wijaya/Documents/GitHub/LBM-city/cases
 #   TSUBAME checkout through rclone:  Y:/cases
 # lbm_cases: C:/Users/Mikael Wijaya/Documents/GitHub/LBM-city/cases
+
+# Optional: root of the reducer outputs (scripts/reduce_particle_bins.py) when they are not inside the
+# lbm_results run folders, laid out as <lbm_reduced>/<case>/<date>_<tag>/particle_reduced.
+# Scripts look here first and then in <lbm_results>/<run>/particle_reduced.
+#   Lab PC, TSUBAME through rclone:  Z:/lbm_reduced
+# lbm_reduced: Z:/lbm_reduced

@@ -1,0 +1,25 @@
+# Named sets of runs that the comparison scripts read and plot together.
+#
+# A script run with --set NAME reads every run of that set (any number of runs, in the order listed;
+# the first run gets colour C0, the second C1, ...) and writes to <figures>/<NAME>/<topic>/, together with
+# a runs.yaml that records which runs, data folders and repo commit made the files. Without --set the
+# scripts use the set named under "default".
+#
+# A run is "<case>/<date>_<tag>", the folder below lbm_results (and lbm_reduced) in local_paths.yaml.
+# The label in front of it names the run in legends, file names and the "case" column of the CSV files,
+# so keep labels short and unique within a set. Add a new set instead of editing one that has figures.
+
+default: flat512_conv_vs_neutral
+
+sets:
+  flat512_conv_vs_neutral:
+    description: flat 512x128x1024, convective (scalar2) vs neutral (no scalars, no buoyancy), before the SGS MPI fix
+    runs:
+      convective: flat_512x128x1024/20261011_scalar2
+      neutral: flat_512x128x1024/20261017_neutral
+
+  flat512_sgsfix:
+    description: flat 512x128x1024 convective, before and after the particle SGS MPI fix (LBM-city d154fd2)
+    runs:
+      convective_old: flat_512x128x1024/20261011_scalar2
+      convective_sgsfix: flat_512x128x1024/20261026_scalar2

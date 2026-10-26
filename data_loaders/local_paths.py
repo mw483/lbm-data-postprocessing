@@ -15,6 +15,7 @@ OPTIONAL_KEYS = (
     "wind_outputs",   # old layout: folder holding the solver Output folders (<date>_output_<case>)
     "lbm_results",    # new layout: <case>/<date>_<tag>/{output,particle_postprocess} below this folder
     "lbm_cases",      # an LBM-city cases/ folder: <case>/map/*.dat, <case>/particle_position/particle_position.txt
+    "lbm_reduced",    # reducer outputs kept apart from lbm_results: <case>/<date>_<tag>/particle_reduced below it
 )
 
 
@@ -59,8 +60,21 @@ def particle_postprocess_dir(paths, run):
 
 
 def particle_reduced_dir(paths, run):
-    """Folder with the output of scripts/reduce_particle_bins.py for one run (reduced.npz, snapshots/)."""
-    return _run_subfolder(paths, run, "particle_reduced")
+    """
+    Folder with the output of scripts/reduce_particle_bins.py for one run (reduced.npz, snapshots/).
+
+    Looks in <lbm_reduced>/<run>/particle_reduced first (when lbm_reduced is set), then in
+    <lbm_results>/<run>/particle_reduced, and returns the first that exists.
+    """
+    roots = [k for k in ("lbm_reduced", "lbm_results") if k in paths]
+    if not roots:
+        raise KeyError("[ERROR] set lbm_reduced or lbm_results in local_paths.yaml")
+    candidates = [paths[k] / run / "particle_reduced" for k in roots]
+    for c in candidates:
+        if c.is_dir():
+            return c
+    raise FileNotFoundError(f"[ERROR] no particle_reduced folder for {run}; looked in: "
+                            + ", ".join(str(c) for c in candidates))
 
 
 def case_map_dir(paths, case):
