@@ -30,7 +30,7 @@ QUANTITIES = [
     ("T", r"$\theta - \theta_{ref}$ [K]"),
     ("flux_wt", r"$\langle w'\theta' \rangle$ [K m/s]"),
 ]
-ZMAX = 2048.0           # top of the plots [m]
+ZMAX = 1024.0           # top of the plots [m] Default: 2048
 WINDOW_CMAP = "Blues"   # one hue, light = early window, dark = late window
 
 
