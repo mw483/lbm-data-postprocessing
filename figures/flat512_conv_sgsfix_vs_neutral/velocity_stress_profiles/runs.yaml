@@ -1,0 +1,10 @@
+set: flat512_conv_sgsfix_vs_neutral
+runs:
+  convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix
+  neutral: flat_512x128x1024/20261017_neutral
+inputs:
+  convective_sgsfix: D:\lbm_results\flat_512x128x1024\20261026_scalar2_sgsfix\output
+  neutral: D:\lbm_results\flat_512x128x1024\20261017_neutral\output
+script: plot_velocity_stress_profiles.py
+written: '2026-10-27T15:41:19'
+repo_commit: b77cf2e

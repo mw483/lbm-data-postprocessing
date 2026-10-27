@@ -1,0 +1,10 @@
+set: flat512_conv_sgsfix_vs_neutral
+runs:
+  convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix
+  neutral: flat_512x128x1024/20261017_neutral
+inputs:
+  convective_sgsfix: D:\lbm_results\flat_512x128x1024\20261026_scalar2_sgsfix\particle_postprocess
+  neutral: D:\lbm_results\flat_512x128x1024\20261017_neutral\particle_postprocess
+script: analyze_particle_density.py
+written: '2026-10-27T15:37:55'
+repo_commit: 3e22def+dirty
