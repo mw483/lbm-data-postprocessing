@@ -18,6 +18,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-21 | [2026-10-21_explain-statistics-rule.md](2026-10-21_explain-statistics-rule.md) | CLAUDE.md: new section "Explaining statistics and figures": every figure or statistic comes with what it measures, why this statistic (purpose of the analysis first), reference expectation with citation ([U] if unchecked), and units, normalisation and sample. No code changed | `47ddbb3` |
 | 2026-10-26 | [2026-10-26_run-sets.md](2026-10-26_run-sets.md) | Branch `analysis/scalar2-outputs`: named run sets in `run_sets.yaml`, `--set NAME` on seven comparison scripts, outputs in `<figures>/<set>/<topic>/` with a `runs.yaml` manifest, optional `lbm_reduced` root, 514 figures moved to `figures/flat512_conv_vs_neutral/`, CBL-scaled figure holds all runs. Tested on synthetic data in the cloud for one script; others lint-checked only | `b221977` `e36036e` `e3742d7` `03524d0` |
 | 2026-10-26 | [2026-10-26_window-scatter.md](2026-10-26_window-scatter.md) | Branch `analysis/scalar2-outputs`: `compare_window_scatter` compares the run-to-run spread of the `prof*.csv` window means (U, var_u, var_w, cov_uw, flux_wt; layer 100-400 m) with each run's window-to-window change, to judge whether the 20261011 vs 20261026 gap is more than seed noise. Unit tests and synthetic smoke run only, not run on the real data | `25ca674` |
+| 2026-10-28 | [2026-10-28_jakarta-map-analysis.md](2026-10-28_jakarta-map-analysis.md) | Branch `analysis/scalar2-outputs`: urban morphology library (lambda_p, H_av, lambda_f, building groups, tiles), map georeference helpers, and `scripts/jakarta-map-analysis/` (consistency checks, location fit against OSM polygons, statistics, figures). Run on the 12 m map in the cloud only, not on the PC. Map matches 2023 OSM buildings (iou 0.75), not the 2017 strip (0.42) | `74e9157` `3a6f2c9` |
 
 ## Glossary
 
@@ -49,6 +50,9 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Manifest | `runs.yaml` in an output folder: set, runs, data folders read, script, date and repo commit |
 | Within-run change | `abs(Q_k - Q_{k-1})` of one run between consecutive windows: one window's sampling noise plus the slow trend, so an upper bound of the noise |
 | Between-run spread | Max - min over the runs of a set, per window and height; `abs(a - b)` for two runs |
+| lambda_p, lambda_f, H_av | Plan area fraction (built share of ground), frontal area index (wall area facing the wind per ground area), area-weighted mean building height |
+| Building group | 4-connected set of building cells; the raster has no building IDs, so touching buildings merge and single cells count |
+| Georef | `georef.yaml`: where a map sits on Earth (orientation, offset, scale, CRS) |
 
 ## Inspecting the changes
 
