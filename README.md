@@ -66,6 +66,10 @@ python scripts/view_map_3d.py <map folder> --sources <particle_position.txt>    
 
 `--case` reads `<lbm_cases>/<case>/map/` (set `lbm_cases` in `local_paths.yaml` to an LBM-city `cases` folder, branch `mikael/cases`). A map folder is any folder with `topography.dat`, `building.dat` and `vegetation.dat`, for maps that are not a case yet. Press `p` over a point to print x, y, cell i, j and the heights there; `s` saves a screenshot to `<figures>/map_3d/`. Coarsened views widen buildings and trees, so pick sources on a `--stride 1` crop. `--save view.png` writes a PNG without a window.
 
+### Jakarta map analysis (2026-10-28)
+
+Consistency checks, location fit, terrain/building/tree statistics and figures for a map set: see [scripts/jakarta-map-analysis/README.md](scripts/jakarta-map-analysis/README.md).
+
 ### Solver statistics, scalar2 and later (2026-10-16)
 
 Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at `<lbm_results>/<case>/<date>_<tag>/output` (wind CSV) and `.../particle_postprocess` (post-processed particles). Put the runs, written `<case>/<date>_<tag>` (e.g. `flat_512x128x1024/20261011_scalar2`), in `CASES` at the top of each script, then:
