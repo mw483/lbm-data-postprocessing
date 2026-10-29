@@ -121,3 +121,13 @@ def test_location_search_finds_shift_and_orientation():
     assert o == "i:S,j:W"
     sc, r, c = fit.refine(ref, north_up(mask, o), r, c, 8)
     assert (r, c) == (row, col) and sc["iou"] == 1.0
+
+
+def test_image_transform_matches_cell_to_crs():
+    from data_loaders.map_georef import image_shape, image_transform
+    geo = {"orientation": "i:S,j:W", "nx": 4, "ny": 2, "cell_size": 2.0, "e_topleft": 100.0, "n_topleft": 50.0}
+    assert image_shape(geo) == (4, 2)
+    t = image_transform(geo)
+    for i, j in ((0, 0), (3, 1), (2, 0)):
+        r, c = image_index(i, j, geo)
+        assert t @ (c + 0.5, r + 0.5) == cell_to_crs(i, j, geo)

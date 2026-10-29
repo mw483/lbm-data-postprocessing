@@ -77,3 +77,37 @@ def load_georef(path):
 def save_georef(path, geo):
     with open(path, "w", encoding="utf-8") as f:
         yaml.safe_dump(geo, f, sort_keys=False)
+
+
+def image_transform(geo):
+    """Affine transform (rasterio) of the north-up map image, for warping other rasters onto it."""
+    from affine import Affine
+    d = geo["cell_size"]
+    return Affine(d, 0.0, geo["e_topleft"], 0.0, -d, geo["n_topleft"])
+
+
+def image_shape(geo):
+    """(rows, cols) of the north-up map image."""
+    i_dir = geo["orientation"].split(",")[0].split(":")[1]
+    return (geo["nx"], geo["ny"]) if i_dir in "NS" else (geo["ny"], geo["nx"])
+
+
+def warp_to_map(path, geo, resampling="bilinear", src_crs=None, band=1, use_nodata=True):
+    """
+    A raster file resampled onto the north-up map image grid (float, NaN where
+    it has no data). src_crs is for files without a CRS tag. use_nodata=False
+    keeps the file's nodata value as data (e.g. 0 = no building). Needs rasterio.
+    """
+    import rasterio
+    from rasterio.warp import Resampling, reproject
+    out = np.full(image_shape(geo), np.nan, dtype=np.float32)
+    with rasterio.open(path) as src:
+        crs = src.crs or src_crs
+        if crs is None:
+            raise ValueError(f"[ERROR] {path} has no CRS; pass src_crs")
+        data = src.read(band).astype(np.float32)
+        nodata = src.nodata if use_nodata and src.nodata is not None else -3.0e38   # -3e38: never in the data
+        reproject(source=data, destination=out, src_transform=src.transform, src_crs=crs, src_nodata=nodata,
+                  dst_transform=image_transform(geo), dst_crs=geo["crs"], dst_nodata=np.nan,
+                  resampling=getattr(Resampling, resampling))
+    return out
