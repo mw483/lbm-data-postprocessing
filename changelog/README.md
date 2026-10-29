@@ -19,6 +19,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-26 | [2026-10-26_run-sets.md](2026-10-26_run-sets.md) | Branch `analysis/scalar2-outputs`: named run sets in `run_sets.yaml`, `--set NAME` on seven comparison scripts, outputs in `<figures>/<set>/<topic>/` with a `runs.yaml` manifest, optional `lbm_reduced` root, 514 figures moved to `figures/flat512_conv_vs_neutral/`, CBL-scaled figure holds all runs. Tested on synthetic data in the cloud for one script; others lint-checked only | `b221977` `e36036e` `e3742d7` `03524d0` |
 | 2026-10-26 | [2026-10-26_window-scatter.md](2026-10-26_window-scatter.md) | Branch `analysis/scalar2-outputs`: `compare_window_scatter` compares the run-to-run spread of the `prof*.csv` window means (U, var_u, var_w, cov_uw, flux_wt; layer 100-400 m) with each run's window-to-window change, to judge whether the 20261011 vs 20261026 gap is more than seed noise. Unit tests and synthetic smoke run only, not run on the real data | `25ca674` |
 | 2026-10-28 | [2026-10-28_jakarta-map-analysis.md](2026-10-28_jakarta-map-analysis.md) | Branch `analysis/scalar2-outputs`: urban morphology library (lambda_p, H_av, lambda_f, building groups, tiles), map georeference helpers, and `scripts/jakarta-map-analysis/` (consistency checks, location fit against OSM polygons, statistics, figures). Run on the 12 m map in the cloud only, not on the PC. Map matches 2023 OSM buildings (iou 0.75), not the 2017 strip (0.42) | `74e9157` `3a6f2c9` |
+| 2026-10-29 | [2026-10-29_jakarta-map-reference-comparison.md](2026-10-29_jakarta-map-reference-comparison.md) | Branch `analysis/scalar2-outputs`: `compare_reference` compares the 12 m Jakarta map with DEMNAS terrain, GHSL built-up fraction and building height (AGBH, ANBH) per 100 m pixel, and with its source rasters. Built area agrees (23.1 vs 23.7 km2), heights 35 % lower than GHSL, terrain 2.3 m below DEMNAS (cause unknown), map is a close relative of the source building raster but not the same file. Run in the cloud only, not on the PC | `92da746` |
 
 ## Glossary
 
@@ -53,6 +54,10 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | lambda_p, lambda_f, H_av | Plan area fraction (built share of ground), frontal area index (wall area facing the wind per ground area), area-weighted mean building height |
 | Building group | 4-connected set of building cells; the raster has no building IDs, so touching buildings merge and single cells count |
 | Georef | `georef.yaml`: where a map sits on Earth (orientation, offset, scale, CRS) |
+| AGBH | GHSL average gross building height: building volume / pixel area (m). Same quantity as the map's H_av |
+| ANBH | GHSL average net building height: AGBH / built-up fraction, the mean height of the buildings themselves (m) |
+| DEMNAS | Indonesian national digital elevation model (Badan Informasi Geospasial); used as independent terrain reference |
+| GHSL | Global Human Settlement Layer (European Commission JRC): GHS-BUILT-S (built-up surface) and GHS-BUILT-H (building height), R2023A, on a 100 m World Mollweide grid |
 
 ## Inspecting the changes
 
