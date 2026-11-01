@@ -5,7 +5,10 @@
 # a runs.yaml that records which runs, data folders and repo commit made the files. Without --set the
 # scripts use the set named under "default".
 #
-# A run is "<case>/<date>_<tag>", the folder below lbm_results (and lbm_reduced) in local_paths.yaml.
+# A run is "<case>/<date>_<tag>", the folder below lbm_results (and lbm_reduced) in local_paths.yaml,
+# or a mapping of its folders for data that is not in that layout (e.g. an rclone drive):
+#   label: {output: <wind CSV folder>, particle_postprocess: <C++ basic pass folder>, particle_reduced: <reduce_particle_bins output>}
+# Give only the folders the scripts you run need.
 # The label in front of it names the run in legends, file names and the "case" column of the CSV files,
 # so keep labels short and unique within a set. Add a new set instead of editing one that has figures.
 
@@ -33,4 +36,6 @@ sets:
   flat2048_long:
     description: long convective run flat 2048x128x704 (4096 x 256 x 1408 m, 2400 s, sources x 8-248 m, dist seed 12345, SGS fix)
     runs:
-      convective_long: flat_2048x128x704/20261030_scalar2
+      convective_long:     # kaka's rclone drive on the lab PC (2026-11-01)
+        output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
+        particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess

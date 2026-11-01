@@ -17,6 +17,7 @@ import yaml
 from data_loaders.local_paths import REPO_ROOT
 
 RUN_SETS_FILE = REPO_ROOT / "run_sets.yaml"
+RUN_FOLDER_KEYS = ("output", "particle_postprocess", "particle_reduced")   # keys of a run given as explicit folders
 MANIFEST_NAME = "runs.yaml"
 
 
@@ -30,8 +31,15 @@ def load_run_sets(path=None):
         runs = (s or {}).get("runs") or {}
         if not runs:
             raise ValueError(f"[ERROR] {path}: set {name} has no runs")
-        if any(not isinstance(r, str) or not r for r in runs.values()):
-            raise ValueError(f"[ERROR] {path}: set {name}: every run must be a '<case>/<date>_<tag>' string")
+        for label, r in runs.items():
+            if isinstance(r, dict):
+                unknown = set(r) - set(RUN_FOLDER_KEYS)
+                if not r or unknown:
+                    raise ValueError(f"[ERROR] {path}: set {name}, run {label}: folder keys must be among "
+                                     f"{', '.join(RUN_FOLDER_KEYS)} (got {', '.join(sorted(r)) or 'none'})")
+            elif not isinstance(r, str) or not r:
+                raise ValueError(f"[ERROR] {path}: set {name}, run {label}: give '<case>/<date>_<tag>' "
+                                 f"or a mapping of folders ({', '.join(RUN_FOLDER_KEYS)})")
     default = raw.get("default")
     if default is not None and default not in sets:
         raise KeyError(f"[ERROR] {path}: default set {default} is not under sets")

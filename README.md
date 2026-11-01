@@ -36,7 +36,7 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 
 ### Run sets: which runs a comparison script reads (2026-10-26)
 
-The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `compare_window_scatter`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files.
+The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `compare_window_scatter`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files. A run whose data is not in the `<lbm_results>/<case>/<date>_<tag>/...` layout (for example on an rclone drive) can instead be given as its folders: `label: {output: Z:/..., particle_postprocess: Z:/..., particle_reduced: Z:/...}` (only the ones the scripts need).
 
 ```sh
 python -m scripts.plot_particle_bin_stats                       # set named "default" in run_sets.yaml

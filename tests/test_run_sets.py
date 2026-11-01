@@ -96,3 +96,21 @@ def test_missing_reduced_dir_names_every_place_looked(tmp_path):
     paths = _paths(tmp_path, f"lbm_reduced: {tmp_path / 'r1'}\nlbm_results: {tmp_path / 'r2'}\n")
     with pytest.raises(FileNotFoundError, match="r1.*r2"):
         particle_reduced_dir(paths, "c/run")
+
+
+def test_run_given_as_explicit_folders(tmp_path):
+    from data_loaders.local_paths import particle_postprocess_dir, wind_dir
+    f = tmp_path / "run_sets.yaml"
+    f.write_text("sets:\n  s:\n    runs:\n      a: {output: Z:/run/out, particle_reduced: Z:/run/red}\n      b: case/1\n")
+    _, runs = get_run_set("s", f)
+    assert str(wind_dir({}, runs["a"])).replace("\\", "/") == "Z:/run/out"
+    assert str(particle_reduced_dir({}, runs["a"])).replace("\\", "/") == "Z:/run/red"
+    with pytest.raises(KeyError, match="particle_postprocess"):
+        particle_postprocess_dir({}, runs["a"])
+
+
+def test_explicit_folders_with_unknown_key_are_refused(tmp_path):
+    f = tmp_path / "run_sets.yaml"
+    f.write_text("sets:\n  s:\n    runs:\n      a: {outputs: Z:/run/out}\n")
+    with pytest.raises(ValueError, match="outputs"):
+        load_run_sets(f)

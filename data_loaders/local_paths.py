@@ -50,7 +50,8 @@ def sensor_output_dir(paths, run, sensor_folder="sensor_8x8x8", window="1200-180
 
 
 def wind_dir(paths, run):
-    """Folder with the solver's wind CSV files of one run, e.g. run = "flat_512x128x1024/20261011_scalar2"."""
+    """Folder with the solver's wind CSV files of one run, e.g. run = "flat_512x128x1024/20261011_scalar2",
+    or the "output" entry when the run is given as explicit folders (run_sets.yaml)."""
     return _run_subfolder(paths, run, "output")
 
 
@@ -59,13 +60,23 @@ def particle_postprocess_dir(paths, run):
     return _run_subfolder(paths, run, "particle_postprocess")
 
 
+def _explicit_folder(run, key):
+    """Folder `key` of a run given as a mapping of folders; KeyError when the mapping lacks it."""
+    if key not in run:
+        raise KeyError(f"[ERROR] run {run} has no '{key}' folder; add it to the run in run_sets.yaml")
+    return Path(os.path.expanduser(str(run[key])))
+
+
 def particle_reduced_dir(paths, run):
     """
     Folder with the output of scripts/reduce_particle_bins.py for one run (reduced.npz, snapshots/).
 
-    Looks in <lbm_reduced>/<run>/particle_reduced first (when lbm_reduced is set), then in
+    A run given as explicit folders uses its "particle_reduced" entry. Otherwise
+    looks in <lbm_reduced>/<run>/particle_reduced first (when lbm_reduced is set), then in
     <lbm_results>/<run>/particle_reduced, and returns the first that exists.
     """
+    if isinstance(run, dict):
+        return _explicit_folder(run, "particle_reduced")
     roots = [k for k in ("lbm_reduced", "lbm_results") if k in paths]
     if not roots:
         raise KeyError("[ERROR] set lbm_reduced or lbm_results in local_paths.yaml")
@@ -94,6 +105,8 @@ def _case_folder(paths, case):
 
 
 def _run_subfolder(paths, run, sub):
+    if isinstance(run, dict):
+        return _explicit_folder(run, sub)
     if "lbm_results" not in paths:
         raise KeyError("[ERROR] set lbm_results in local_paths.yaml (folder holding <case>/<date>_<tag>/output ...)")
     return paths["lbm_results"] / run / sub
