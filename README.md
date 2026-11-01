@@ -80,7 +80,12 @@ python scripts/plot_profiles_by_window.py   # mean, sigma_w, TKE, S_w, theta, w'
 python scripts/compare_window_scatter.py --set flat512_sgsfix   # run-to-run spread vs window-to-window change (is a gap more than window noise?)
 python scripts/plot_velocity_stress_profiles.py   # U, V, W and <u'u'>, <v'v'>, <w'w'>, <u'w'> per window, as is and / Ub (Chang et al. 2009 style)
 python scripts/plot_xz_yav_heatmaps.py      # y-averaged x-z heatmaps of U, W, sigma_w, TKE per window; PNG frames, GIF, MP4
+python scripts/plot_profiles_by_station.py --set flat2048_long        # profiles at the yz-plane x stations (+-64 m) and their spread per window
+python scripts/plot_cbl_scales.py --set flat2048_long                 # z_i, w*, t* per window (domain and per rank segment) vs the jump model
+python scripts/plot_cbl_normalised_profiles.py --set flat2048_long    # <w'w'>/w*^2, heat flux etc. against z/z_i, with standard CBL curves
 ```
+
+The last three come from the plan in `planning/cbl_scales_and_particle_validation_plan_2026-10-30.md` (project files). Each script's docstring states what the figure measures, why, the reference it is compared with ([U] = formula not yet checked in the source) and the normalisation. The settings at the top of `plot_cbl_scales.py` (initial neutral layer 300 m, lapse rate 0.01 K/m, flux 0.1 K m/s) copy LBM-city `src/Define_user.h` and must be changed for runs with another initial state.
 
 The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side) and `<case>_step*.png` (one case each), plus `combined.gif` / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
 

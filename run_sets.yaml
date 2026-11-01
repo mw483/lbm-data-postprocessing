@@ -29,3 +29,8 @@ sets:
     runs:
       convective_sgsfix: flat_512x128x1024/20261026_scalar2_sgsfix
       neutral: flat_512x128x1024/20261017_neutral
+
+  flat2048_long:
+    description: long convective run flat 2048x128x704 (4096 x 256 x 1408 m, 2400 s, sources x 8-248 m, dist seed 12345, SGS fix)
+    runs:
+      convective_long: flat_2048x128x704/20261030_scalar2
