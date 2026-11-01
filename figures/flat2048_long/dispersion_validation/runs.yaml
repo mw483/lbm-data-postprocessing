@@ -8,5 +8,5 @@ inputs:
   convective_long: '{''particle_reduced'': WindowsPath(''Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced''),
     ''output'': WindowsPath(''Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2'')}'
 script: plot_dispersion_validation.py
-written: '2026-11-01T12:35:22'
-repo_commit: 66419c8
+written: '2026-11-01T13:41:17'
+repo_commit: bc6e8ff+dirty
