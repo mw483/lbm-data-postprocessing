@@ -14,6 +14,9 @@ and writes into --out:
                                     so particles are not lost through the outflow before --max-age)
                             height: particle velocity moments per 2 m height bin (total and SGS)
                             x:      SGS velocity per 2 m x bin below --sgs-ztop (rank-boundary check)
+                            plume:  (x - x_source, z) histogram of the same upstream sources, weighted so that
+                                    plume_concentration() gives the steady crosswind-integrated concentration
+                                    of one continuous point source (--plume-dx bins in x, --dx in z)
   snapshots/snap_<n>.npz  every --snap-every outputs: x, y, z, age [s], id of a fixed --snap-fraction of particles
 Copy the --out folder to <lbm_results>/<case>/<date>_<tag>/particle_reduced on the PC for
 plot_particle_bin_stats.py and animate_particles.py.
@@ -28,8 +31,8 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_loaders.particle_bin import find_ranks, load_step, particle_velocities  # noqa: E402
 from physics_core.particle_bin_stats import (  # noqa: E402
-    add_age, add_height, add_x, age_in_outputs, decode_ids, new_age_acc, new_height_acc, new_x_acc,
-    read_sources, sample_mask, save_reduced,
+    add_age, add_height, add_plume, add_x, age_in_outputs, decode_ids, new_age_acc, new_height_acc,
+    new_plume_acc, new_x_acc, outputs_per_age, read_sources, sample_mask, save_reduced,
 )
 
 
@@ -52,6 +55,7 @@ def parse_args():
     p.add_argument("--max-age", type=int, default=600, help="age bins in outputs (default 600)")
     p.add_argument("--vel-stride", type=int, default=5, help="read uvw, uvw_sgs every this many outputs (default 5)")
     p.add_argument("--sgs-ztop", type=float, default=10.0, help="x statistics for particles below this height [m]")
+    p.add_argument("--plume-dx", type=float, default=8.0, help="x bin of the plume histogram [m] (default 8)")
     p.add_argument("--snap-every", type=int, default=5, help="snapshot every this many outputs, 0 = none (default 5)")
     p.add_argument("--snap-fraction", type=float, default=0.125, help="fraction of particles in snapshots")
     return p.parse_args()
@@ -72,13 +76,18 @@ def main():
     age_acc = new_age_acc(a.max_age, np.arange(0.0, a.lz + a.dx, a.dx), np.arange(-100.0, a.lx + a.dx, a.dx))
     height_acc = new_height_acc(np.arange(0.0, a.lz + a.dx, a.dx))
     x_acc = new_x_acc(np.arange(0.0, a.lx + a.dx, a.dx), a.sgs_ztop)
+    plume_acc = new_plume_acc(np.arange(-100.0, a.lx + a.plume_dx, a.plume_dx), np.arange(0.0, a.lz + a.dx, a.dx))
+
+    available = [n for n in range(a.first, a.last + 1) if find_ranks(a.bin_dir, n)]
+    for n in sorted(set(range(a.first, a.last + 1)) - set(available)):
+        print(f"[WARNING] output {n}: no index*-{n}.bin, skipped")
+    n_plume_age = max(available) - a.release_start + 1 if available else 1
+    per_age = outputs_per_age(available, a.release_start, a.release_every, max(n_plume_age, 1))
+    plume_weight = np.where(per_age > 0, 1.0 / np.where(per_age > 0, per_age, 1.0), 0.0)
 
     t0, used = time.time(), []
-    for n in range(a.first, a.last + 1):
+    for n in available:
         ranks = find_ranks(a.bin_dir, n)
-        if not ranks:
-            print(f"[WARNING] output {n}: no index*-{n}.bin, skipped")
-            continue
         with_vel = (n - a.first) % a.vel_stride == 0
         fields = ("index", "position", "uvw", "uvw_sgs") if with_vel else ("index", "position")
         d = load_step(a.bin_dir, n, fields=fields, ranks=ranks)
@@ -88,6 +97,8 @@ def main():
         age = age_in_outputs(ids, n, a.release_start, a.release_every)
         up = upstream[k]
         add_age(age_acc, age[up], pos[up, 2], pos[up, 0] - src_x[k[up]])
+        ok = up & (age >= 0) & (age < plume_weight.size)
+        add_plume(plume_acc, pos[ok, 0] - src_x[k[ok]], pos[ok, 2], plume_weight[age[ok]])
         if with_vel:
             v = particle_velocities(d, a.c_ref, flg_particle=1)
             add_height(height_acc, pos[:, 2], v["total"], v["sgs"])
@@ -109,7 +120,8 @@ def main():
     meta = {k: getattr(a, k) for k in vars(a)}
     meta.update({"outputs_read": len(used), "first_read": used[0], "last_read": used[-1],
                  "n_upstream_sources": int(upstream.sum())})
-    save_reduced(os.path.join(a.out, "reduced.npz"), meta, age_acc, height_acc, x_acc)
+    meta["release_interval"] = a.release_every * a.dt_output
+    save_reduced(os.path.join(a.out, "reduced.npz"), meta, age_acc, height_acc, x_acc, plume_acc)
     print(f"[SUCCESS] {len(used)} outputs reduced in {time.time() - t0:.0f} s -> {a.out}")
 
 

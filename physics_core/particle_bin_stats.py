@@ -145,6 +145,39 @@ def add_x(acc, x, z, sgs):
     _add(acc, "x_sum_z", b, z)
 
 
+def new_plume_acc(dx_edges, z_edges):
+    """Crosswind-integrated plume from all sources, measured from each particle's own source.
+
+    One 2D histogram over (x - x_source, z), every particle weighted by 1 / (number of outputs read at which
+    its age can occur); with that weight, every age counts once per release, so plume_concentration()
+    turns the sum into the steady crosswind-integrated concentration of one continuous point source.
+    """
+    nd, nz = len(dx_edges) - 1, len(z_edges) - 1
+    return {"plume_dx_edges": np.asarray(dx_edges, dtype=float), "plume_z_edges": np.asarray(z_edges, dtype=float),
+            "plume_hist": np.zeros(nd * nz)}
+
+
+def add_plume(acc, dx, z, weight):
+    """Add particles with downwind distance dx = x - x_source [m], height z [m] and weight 1 / S(age)."""
+    nz = acc["plume_z_edges"].size - 1
+    bd, bz = _bins(dx, acc["plume_dx_edges"]), _bins(z, acc["plume_z_edges"])
+    _add(acc, "plume_hist", np.where((bd >= 0) & (bz >= 0), bd * nz + bz, -1), weight)
+
+
+def outputs_per_age(outputs, release_start, release_every, n_age):
+    """S(a): how many of the outputs read can hold a particle of age a [outputs] (a = 0 .. n_age - 1).
+
+    Age a occurs at output n when n - a is a release output: n - a >= release_start and
+    (n - a - release_start) % release_every == 0.
+    """
+    s = np.zeros(n_age)
+    for n in outputs:
+        a = np.arange(n_age)
+        released = n - a
+        s += ((released >= release_start) & ((released - release_start) % release_every == 0)).astype(float)
+    return s
+
+
 # -----------------------------------------------------------------------------
 # Derived statistics
 # -----------------------------------------------------------------------------
@@ -196,6 +229,20 @@ def x_stats(acc):
         "zero_fraction": _div(acc["x_zero_sgs"], n),
         "z_mean": _div(acc["x_sum_z"], n),
     }
+
+
+def plume_concentration(acc, n_sources, release_interval):
+    """Steady crosswind-integrated concentration per unit release rate, C_y / Q [s/m^2], on (dx, z) bins.
+
+    For a continuous point source C_y(x, z) / Q = integral over age of p(x, z | age); with one particle per
+    source per release interval tau, the weighted histogram H gives C_y / Q = H tau / (n_sources dx dz).
+    Returns (dx centres, z centres, array [n_dx, n_z]). Only complete for distances that particles reach
+    within the oldest age read.
+    """
+    dx_e, z_e = acc["plume_dx_edges"], acc["plume_z_edges"]
+    h = acc["plume_hist"].reshape(dx_e.size - 1, z_e.size - 1)
+    cy = h * release_interval / (n_sources * np.diff(dx_e)[:, None] * np.diff(z_e)[None, :])
+    return 0.5 * (dx_e[1:] + dx_e[:-1]), 0.5 * (z_e[1:] + z_e[:-1]), cy
 
 
 # -----------------------------------------------------------------------------
