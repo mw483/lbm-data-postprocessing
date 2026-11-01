@@ -23,6 +23,8 @@ dev = ["pytest"]
 video = ["imageio", "imageio-ffmpeg"]
 # GIS reading for scripts/jakarta-map-analysis/fit_map_location.py
 gis = ["geopandas", "rasterio", "pyproj"]
+# Prairie Grass daytime z_i (.xls) for scripts/plot_dispersion_validation.py
+validation = ["xlrd>=2.0.1"]
 
 [tool.setuptools]
 packages = ["data_loaders", "physics_core", "plotting_core"]

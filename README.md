@@ -83,7 +83,10 @@ python scripts/plot_xz_yav_heatmaps.py      # y-averaged x-z heatmaps of U, W, s
 python scripts/plot_profiles_by_station.py --set flat2048_long        # profiles at the yz-plane x stations (+-64 m) and their spread per window
 python scripts/plot_cbl_scales.py --set flat2048_long                 # z_i, w*, t* per window (domain and per rank segment) vs the jump model
 python scripts/plot_cbl_normalised_profiles.py --set flat2048_long    # <w'w'>/w*^2, heat flux etc. against z/z_i, with standard CBL curves
+python scripts/plot_dispersion_validation.py --set flat2048_long      # particles vs Willis & Deardorff / Stull ch. 19 and Prairie Grass (needs particle_reduced)
 ```
+
+`plot_dispersion_validation.py` needs a `reduced.npz` made by `reduce_particle_bins.py` from 2026-11-01 on (it adds the per-source "plume" histogram), the Prairie Grass files in `validation_data/prairie_grass/` and `pip install -e .[validation]` (xlrd, for the z_i .xls file).
 
 The last three come from the plan in `planning/cbl_scales_and_particle_validation_plan_2026-10-30.md` (project files). Each script's docstring states what the figure measures, why, the reference it is compared with ([U] = formula not yet checked in the source) and the normalisation. The settings at the top of `plot_cbl_scales.py` (initial neutral layer 300 m, lapse rate 0.01 K/m, flux 0.1 K m/s) copy LBM-city `src/Define_user.h` and must be changed for runs with another initial state.
 
