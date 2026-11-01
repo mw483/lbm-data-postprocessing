@@ -74,12 +74,15 @@ def profile_moments(prof):
 def plane_moments(fields):
     """Central moments from raw plane fields (e.g. load_plane arrays) keyed um, vm, wm, uu, vv, ww.
 
-    Returns {"U", "V", "W", "var_u", "var_v", "var_w", "sigma_w", "tke"} for the keys that can be formed.
+    Returns {"U", "V", "W", "var_u", "var_v", "var_w", "sigma_w", "tke"} for the keys that can be formed,
+    plus "cov_uw" when uw is given.
     """
     out = {k.upper()[0]: fields[k] for k in ("um", "vm", "wm") if k in fields}
     for c in "uvw":
         if f"{c}{c}" in fields and f"{c}m" in fields:
             out[f"var_{c}"] = covariance(fields[f"{c}{c}"], fields[f"{c}m"], fields[f"{c}m"])
+    if all(k in fields for k in ("uw", "um", "wm")):
+        out["cov_uw"] = covariance(fields["uw"], fields["um"], fields["wm"])
     if "var_w" in out:
         out["sigma_w"] = sigma(out["var_w"])
     if all(f"var_{c}" in out for c in "uvw"):
@@ -105,3 +108,31 @@ def convective_scales(moments, theta0=300.0, g=9.81):
         return np.nan, np.nan, surface
     zi = z[np.argmin(flux)]
     return zi, (g / theta0 * surface * zi) ** (1.0 / 3.0), surface
+
+
+def zi_theta_gradient(moments, zmin=10.0, zmax=np.inf):
+    """Mixed-layer depth as the height of the largest dtheta/dz between zmin and zmax [m] (the capping inversion).
+
+    A second z_i definition next to the heat-flux minimum of convective_scales: the flux minimum is a
+    small difference of noisy moments, the theta gradient is smoother. zmin skips the superadiabatic
+    surface layer; zmax keeps the search away from the damping (sponge) layer at the top. NaN when the
+    table has no theta.
+    """
+    z = moments["z"].to_numpy(dtype=float)
+    t = moments["T"].to_numpy(dtype=float)
+    ok = np.isfinite(t) & (z >= zmin) & (z <= zmax)
+    if ok.sum() < 3:
+        return np.nan
+    z, t = z[ok], t[ok]
+    return float(z[np.argmax(np.gradient(t, z))])
+
+
+def cbl_scales(moments, theta0=300.0, g=9.81):
+    """Convective scales of one profile_moments table as a dict:
+    zi_flux (heat-flux minimum), zi_grad (largest dtheta/dz below 2 zi_flux), surface_flux [K m/s],
+    wstar [m/s] and tstar = zi_flux / wstar [s] (both from zi_flux, as in convective_scales).
+    All but surface_flux are NaN without a positive surface flux (no convective layer, e.g. neutral runs).
+    """
+    zi, wstar, flux = convective_scales(moments, theta0, g)
+    return {"zi_flux": zi, "zi_grad": zi_theta_gradient(moments, zmax=2.0 * zi) if flux > 0 else np.nan, "surface_flux": flux,
+            "wstar": wstar, "tstar": zi / wstar if np.isfinite(wstar) and wstar > 0 else np.nan}

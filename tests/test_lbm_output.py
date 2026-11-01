@@ -166,3 +166,33 @@ def test_shared_norm_same_scale_and_centred():
     assert (n.vmin, n.vmax) == (0.0, 3.0)
     c = shared_norm([np.array([-0.5, 2.0])], center=0.0)
     assert (c.vmin, c.vcenter, c.vmax) == (-2.0, 0.0, 2.0)
+
+
+def test_plane_moments_cov_uw():
+    from physics_core.moments import plane_moments
+    m = plane_moments({"um": np.array([2.0]), "wm": np.array([0.5]), "uw": np.array([1.5])})
+    assert m["cov_uw"][0] == pytest.approx(0.5)
+
+
+def test_zi_theta_gradient_and_cbl_scales():
+    from physics_core.moments import cbl_scales, zi_theta_gradient
+    z = np.arange(1.0, 800.0, 2.0)
+    theta = np.where(z < 400, 0.0, 0.01 * (z - 400)) + np.where((z > 398) & (z < 404), 1.0, 0.0) * (z - 398) / 6
+    flux = np.where(z < 1, 0.0, 0.1 * (1 - 1.2 * z / 400.0))
+    m = pd.DataFrame({"z": z, "T": theta, "flux_wt": np.maximum(flux, -0.02), "flux_wt_model": 0.0})
+    assert 396 <= zi_theta_gradient(m) <= 404
+    s = cbl_scales(m, theta0=300.0)
+    assert s["surface_flux"] == pytest.approx(0.1 * (1 - 1.2 / 400.0))
+    assert s["wstar"] == pytest.approx((9.81 / 300.0 * s["surface_flux"] * s["zi_flux"]) ** (1 / 3))
+    assert s["tstar"] == pytest.approx(s["zi_flux"] / s["wstar"])
+    neutral = m.assign(flux_wt=0.0)
+    assert np.isnan(cbl_scales(neutral)["zi_grad"]) and np.isnan(cbl_scales(neutral)["wstar"])
+
+
+def test_cbl_reference_curves():
+    from physics_core.cbl_reference import heat_flux_linear, sigma_w2_lenschow, zi_encroachment
+    assert sigma_w2_lenschow(0.0) == 0.0 and np.isnan(sigma_w2_lenschow(1.2))
+    assert sigma_w2_lenschow(1.0) == pytest.approx(1.8 * 0.2**2)
+    assert heat_flux_linear(1.0) == pytest.approx(-0.2) and heat_flux_linear(0.0) == 1.0
+    assert zi_encroachment(0.0, 300.0, 0.1, 0.01) == pytest.approx(300.0)
+    assert zi_encroachment(1400.0, 300.0, 0.1, 0.01, 0.0) == pytest.approx(np.sqrt(300.0**2 + 2 * 0.1 * 1400 / 0.01))
