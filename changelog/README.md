@@ -22,6 +22,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-29 | [2026-10-29_jakarta-map-reference-comparison.md](2026-10-29_jakarta-map-reference-comparison.md) | Branch `analysis/scalar2-outputs`: `compare_reference` compares the 12 m Jakarta map with DEMNAS terrain, GHSL built-up fraction and building height (AGBH, ANBH) per 100 m pixel, and with its source rasters. Built area agrees (23.1 vs 23.7 km2), heights 35 % lower than GHSL, terrain 2.3 m below DEMNAS (cause unknown), map is a close relative of the source building raster but not the same file. Run in the cloud only, not on the PC | `92da746` |
 | 2026-11-01 | [2026-11-01_cbl-scales-and-station-profiles.md](2026-11-01_cbl-scales-and-station-profiles.md) | Branch `analysis/scalar2-outputs`: z_i, w*, t* per window vs jump model, profiles in mixed-layer scaling with Lenschow 1980 and linear-flux curves, profiles at x stations with spread as error bar, run set `flat2048_long`. Run on the 512 runs only; reference formulas still [U]; particle validation not included | `7bc165d` `7d661fe` `c59274f` |
 | 2026-11-01 | [2026-11-01_particle-dispersion-validation.md](2026-11-01_particle-dispersion-validation.md) | Branch `analysis/scalar2-outputs`: particle validation in convection (item 3 of the plan): per-source plume histogram in the reducer, `plot_dispersion_validation` against Willis & Deardorff / Stull ch. 19 and the unstable Prairie Grass runs, Prairie Grass reader, Monin-Obukhov fit [U]; a run in `run_sets.yaml` can be given as explicit folders (kaka's Z: drive). Synthetic data and real Prairie Grass only; not run on real particles, reducer must be rerun for the long run | `3093e32` `9589d36` `a65cf38` |
+| 2026-11-01 | [2026-11-01_survival-and-near-wall-checks.md](2026-11-01_survival-and-near-wall-checks.md) | Branch `analysis/scalar2-outputs`: checks that particle losses at the domain edges do not distort the long-run dispersion figures: survivor-weighted plume (reducer first pass, `--no-survivor-pass`), survival and plume front with the first exit marked on every X figure, share above z_i, per-age z_i and w*, near-wall zoom (0-40 m). Unit tests and synthetic runs only, not run on the long-run data; reducer must be rerun on TSUBAME | `fb1c21c` `1633136` |
 
 ## Glossary
 
@@ -65,6 +66,8 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | C_y / Q | Crosswind-integrated concentration per unit release rate [s/m^2]; scaled form C_y U z_i / Q |
 | X | Dimensionless time t w*/z_i (age) or distance x w*/(U z_i) in mixed-layer scaling |
 | Prairie Grass | 1956 field experiment: SO2 released near the ground, sampled on arcs; used for the ground-level comparison |
+| Survivor weight | n_sources / alive(age): weight that makes the plume concentration count only the particles still in the domain, as if none had left |
+| First exit | First age at which particles from the most downstream upstream source can leave through the outflow; statistics right of it are biased |
 | Monin-Obukhov fit | Fit of u*, theta*, L to wind and temperature profiles near the ground (Businger-Dyer forms) [U] |
 
 ## Inspecting the changes
