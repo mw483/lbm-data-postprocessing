@@ -21,6 +21,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-10-28 | [2026-10-28_jakarta-map-analysis.md](2026-10-28_jakarta-map-analysis.md) | Branch `analysis/scalar2-outputs`: urban morphology library (lambda_p, H_av, lambda_f, building groups, tiles), map georeference helpers, and `scripts/jakarta-map-analysis/` (consistency checks, location fit against OSM polygons, statistics, figures). Run on the 12 m map in the cloud only, not on the PC. Map matches 2023 OSM buildings (iou 0.75), not the 2017 strip (0.42) | `74e9157` `3a6f2c9` |
 | 2026-10-29 | [2026-10-29_jakarta-map-reference-comparison.md](2026-10-29_jakarta-map-reference-comparison.md) | Branch `analysis/scalar2-outputs`: `compare_reference` compares the 12 m Jakarta map with DEMNAS terrain, GHSL built-up fraction and building height (AGBH, ANBH) per 100 m pixel, and with its source rasters. Built area agrees (23.1 vs 23.7 km2), heights 35 % lower than GHSL, terrain 2.3 m below DEMNAS (cause unknown), map is a close relative of the source building raster but not the same file. Run in the cloud only, not on the PC | `92da746` |
 | 2026-11-01 | [2026-11-01_cbl-scales-and-station-profiles.md](2026-11-01_cbl-scales-and-station-profiles.md) | Branch `analysis/scalar2-outputs`: z_i, w*, t* per window vs jump model, profiles in mixed-layer scaling with Lenschow 1980 and linear-flux curves, profiles at x stations with spread as error bar, run set `flat2048_long`. Run on the 512 runs only; reference formulas still [U]; particle validation not included | `7bc165d` `7d661fe` `c59274f` |
+| 2026-11-01 | [2026-11-01_particle-dispersion-validation.md](2026-11-01_particle-dispersion-validation.md) | Branch `analysis/scalar2-outputs`: particle validation in convection (item 3 of the plan): per-source plume histogram in the reducer, `plot_dispersion_validation` against Willis & Deardorff / Stull ch. 19 and the unstable Prairie Grass runs, Prairie Grass reader, Monin-Obukhov fit [U]; a run in `run_sets.yaml` can be given as explicit folders (kaka's Z: drive). Synthetic data and real Prairie Grass only; not run on real particles, reducer must be rerun for the long run | `3093e32` `9589d36` `a65cf38` |
 
 ## Glossary
 
@@ -59,6 +60,12 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | ANBH | GHSL average net building height: AGBH / built-up fraction, the mean height of the buildings themselves (m) |
 | DEMNAS | Indonesian national digital elevation model (Badan Informasi Geospasial); used as independent terrain reference |
 | GHSL | Global Human Settlement Layer (European Commission JRC): GHS-BUILT-S (built-up surface) and GHS-BUILT-H (building height), R2023A, on a 100 m World Mollweide grid |
+| Explicit folders | A run in `run_sets.yaml` given as a mapping `{output, particle_postprocess, particle_reduced}` instead of `<case>/<date>_<tag>` |
+| Plume histogram | `plume` entry of `reduced.npz`: (x - x_source, z) histogram weighted by 1 / S(age); gives C_y / Q of one continuous point source |
+| C_y / Q | Crosswind-integrated concentration per unit release rate [s/m^2]; scaled form C_y U z_i / Q |
+| X | Dimensionless time t w*/z_i (age) or distance x w*/(U z_i) in mixed-layer scaling |
+| Prairie Grass | 1956 field experiment: SO2 released near the ground, sampled on arcs; used for the ground-level comparison |
+| Monin-Obukhov fit | Fit of u*, theta*, L to wind and temperature profiles near the ground (Businger-Dyer forms) [U] |
 
 ## Inspecting the changes
 
