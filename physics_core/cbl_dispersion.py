@@ -44,3 +44,60 @@ def profile_moments_of_density(Z, density):
         mean = (w * Z[None, :]).sum(axis=1) / total
         var = (w * Z[None, :] ** 2).sum(axis=1) / total - mean**2
     return np.where(total > 0, mean, np.nan), np.sqrt(np.clip(np.where(total > 0, var, np.nan), 0, None))
+
+
+def lagrangian_cy_per_age(hist_z, z_edges, age_s, zi_age, wstar_age, Z_edges):
+    """As lagrangian_cy, but each age is scaled by its own z_i and w* (arrays over the ages).
+
+    Each row's cumulative distribution in z is interpolated at Z_edges * z_i(age) and differenced, so all
+    rows share one Z grid. Returns (X [n_age], Z centres, density [n_age, n_Z]); rows without particles NaN.
+    """
+    hist_z = np.asarray(hist_z, dtype=float)
+    z_edges = np.asarray(z_edges, dtype=float)
+    Z_edges = np.asarray(Z_edges, dtype=float)
+    zi_age, wstar_age = np.asarray(zi_age, dtype=float), np.asarray(wstar_age, dtype=float)
+    n = hist_z.sum(axis=1)
+    cdf = np.concatenate([np.zeros((hist_z.shape[0], 1)), np.cumsum(hist_z, axis=1)], axis=1)
+    density = np.full((hist_z.shape[0], Z_edges.size - 1), np.nan)
+    for i in np.nonzero(n > 0)[0]:
+        c = np.interp(Z_edges * zi_age[i], z_edges, cdf[i] / n[i])
+        density[i] = np.diff(c) / np.diff(Z_edges)
+    X = np.asarray(age_s, dtype=float) * wstar_age / zi_age
+    return X, 0.5 * (Z_edges[1:] + Z_edges[:-1]), density
+
+
+def fraction_above(hist_z, z_edges, height):
+    """Per age row, the fraction of particles above height [m] (a scalar or one value per row).
+
+    Linear within the bin that contains the height. Rows without particles are NaN.
+    """
+    hist_z = np.asarray(hist_z, dtype=float)
+    z_edges = np.asarray(z_edges, dtype=float)
+    height = np.broadcast_to(np.asarray(height, dtype=float), (hist_z.shape[0],))
+    n = hist_z.sum(axis=1)
+    cdf = np.concatenate([np.zeros((hist_z.shape[0], 1)), np.cumsum(hist_z, axis=1)], axis=1)
+    below = np.array([np.interp(h, z_edges, c) for h, c in zip(height, cdf)])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(n > 0, 1.0 - below / n, np.nan)
+
+
+def scales_per_age(t_window, zi_window, wstar_window, age_s, t_release_first, t_last, n_sub=50):
+    """z_i and w* for each particle age, from solver windows (centre times t_window [s]).
+
+    Particles of age a are sampled at times t_release_first + a .. t_last (every release that reached that
+    age within the outputs read), so each age gets the mean of z_i(t) and w*(t) over that interval, with
+    z_i(t) linearly interpolated between window centres (held constant outside them). Ages that do not fit
+    into the interval are NaN.
+    """
+    age_s = np.asarray(age_s, dtype=float)
+    order = np.argsort(t_window)
+    t_w = np.asarray(t_window, dtype=float)[order]
+    zi_w, ws_w = np.asarray(zi_window, dtype=float)[order], np.asarray(wstar_window, dtype=float)[order]
+    zi, ws = np.full(age_s.size, np.nan), np.full(age_s.size, np.nan)
+    for i, a in enumerate(age_s):
+        t0 = t_release_first + a
+        if t0 > t_last:
+            continue
+        t = np.linspace(t0, t_last, n_sub)
+        zi[i], ws[i] = np.interp(t, t_w, zi_w).mean(), np.interp(t, t_w, ws_w).mean()
+    return zi, ws

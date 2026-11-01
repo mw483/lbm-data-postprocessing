@@ -99,3 +99,57 @@ def test_prairie_grass_files_and_surface_layer_fit():
     u, t, l_fit = fit_profiles(z, wind, temp, z0)
     assert u == pytest.approx(ustar, rel=0.05) and t == pytest.approx(tstar, rel=0.05)
     assert l_fit == pytest.approx(L, rel=0.1)
+
+
+def test_survivor_weighted_plume_restores_lost_particles():
+    """Uniform wind U = 4 m/s, two sources, the particles of source 2 are lost once they are older than
+    10 outputs (as through a y edge): the all-release plume halves beyond 40 m, the survivor plume stays 1/U."""
+    from physics_core.particle_bin_stats import (
+        add_plume, new_plume_acc, outputs_per_age, plume_concentration, survivor_weights,
+    )
+    outputs = range(0, 50)
+    per_age = outputs_per_age(outputs, 0, 1, 50)
+    acc = new_plume_acc(np.arange(0.0, 400.0 + 8.0, 8.0), np.arange(0.0, 10.0 + 2.0, 2.0))
+    steps = []
+    for n in outputs:
+        age = np.concatenate([np.arange(0, n + 1), np.arange(0, min(n, 10) + 1)])   # source 2 only to age 10
+        steps.append(age)
+    alive = np.zeros(50)
+    for age in steps:
+        alive += np.bincount(age, minlength=50)
+    w_surv = survivor_weights(alive, n_sources=2)
+    for age in steps:
+        add_plume(acc, 4.0 * age, np.full(age.size, 1.0), 1.0 / per_age[age])
+        add_plume(acc, 4.0 * age, np.full(age.size, 1.0), w_surv[age], key="plume_surv_hist")
+    _, _, cy = plume_concentration(acc, n_sources=2, release_interval=1.0)
+    _, _, cs = plume_concentration(acc, n_sources=2, release_interval=1.0, key="plume_surv_hist")
+    np.testing.assert_allclose(cy[:5, 0], 1.0 / 8.0)          # x < 40 m: both sources
+    np.testing.assert_allclose(cy[6:24, 0], 0.5 / 8.0)        # x > 44 m: half lost
+    np.testing.assert_allclose(cs[:24, 0], 1.0 / 8.0)         # survivors: no loss
+
+
+def test_survival_and_leading_edge():
+    from physics_core.particle_bin_stats import add_age, leading_edge, new_age_acc, survival_by_age
+    acc = new_age_acc(3, np.arange(0.0, 12.0, 2.0), np.arange(0.0, 110.0, 10.0))
+    add_age(acc, [0, 0, 1, 2], [1, 1, 1, 1], [5, 5, 15, 95])
+    surv = survival_by_age(acc, n_sources=2, per_age=[1, 1, 1])
+    np.testing.assert_allclose(surv, [1.0, 0.5, 0.5])
+    q, front = leading_edge(acc, 0.99)
+    assert q.tolist() == [10.0, 20.0, 100.0] and front.tolist() == [10.0, 20.0, 100.0]
+
+
+def test_per_age_scaling_fraction_above_and_scales():
+    from physics_core.cbl_dispersion import fraction_above, lagrangian_cy_per_age, scales_per_age
+    z_edges = np.arange(0.0, 1001.0, 10.0)
+    hist = np.zeros((2, 100))
+    hist[0, :40] = 1.0                       # uniform over 0-400 m
+    hist[1, :50] = 1.0                       # uniform over 0-500 m
+    X, Z, dens = lagrangian_cy_per_age(hist, z_edges, [100.0, 200.0], [400.0, 500.0], [1.0, 1.0],
+                                       np.arange(0.0, 1.21, 0.05))
+    np.testing.assert_allclose(dens[:, Z < 1], 1.0)              # well mixed in each age's own z_i
+    np.testing.assert_allclose(dens[:, Z > 1], 0.0, atol=1e-12)
+    np.testing.assert_allclose(X, [0.25, 0.4])
+    np.testing.assert_allclose(fraction_above(hist, z_edges, [300.0, 250.0]), [0.25, 0.5])
+    zi, ws = scales_per_age([100.0, 300.0], [300.0, 500.0], [1.0, 1.0], [0.0, 100.0, 500.0], 100.0, 300.0)
+    np.testing.assert_allclose(zi[:2], [400.0, 450.0])           # mean of linear z_i over 100-300 s, 200-300 s
+    assert np.isnan(zi[2])
