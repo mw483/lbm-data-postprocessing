@@ -39,3 +39,4 @@ sets:
       convective_long:     # kaka's rclone drive on the lab PC (2026-11-01)
         output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
         particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess
+        particle_reduced: Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced
