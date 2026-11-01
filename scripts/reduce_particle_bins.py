@@ -17,6 +17,11 @@ and writes into --out:
                             plume:  (x - x_source, z) histogram of the same upstream sources, weighted so that
                                     plume_concentration() gives the steady crosswind-integrated concentration
                                     of one continuous point source (--plume-dx bins in x, --dx in z)
+                            plume_surv: the same with the survivor weight (particles that left the domain do
+                                    not lower the concentration); needs a first pass over the index files
+                                    only, skipped with --no-survivor-pass
+                            plume_outputs_per_age, plume_alive_per_age: S(age) and the surviving upstream
+                                    particles per age, for the survival fraction
   snapshots/snap_<n>.npz  every --snap-every outputs: x, y, z, age [s], id of a fixed --snap-fraction of particles
 Copy the --out folder to <lbm_results>/<case>/<date>_<tag>/particle_reduced on the PC for
 plot_particle_bin_stats.py and animate_particles.py.
@@ -32,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data_loaders.particle_bin import find_ranks, load_step, particle_velocities  # noqa: E402
 from physics_core.particle_bin_stats import (  # noqa: E402
     add_age, add_height, add_plume, add_x, age_in_outputs, decode_ids, new_age_acc, new_height_acc,
-    new_plume_acc, new_x_acc, outputs_per_age, read_sources, sample_mask, save_reduced,
+    new_plume_acc, new_x_acc, outputs_per_age, read_sources, sample_mask, save_reduced, survivor_weights,
 )
 
 
@@ -56,6 +61,8 @@ def parse_args():
     p.add_argument("--vel-stride", type=int, default=5, help="read uvw, uvw_sgs every this many outputs (default 5)")
     p.add_argument("--sgs-ztop", type=float, default=10.0, help="x statistics for particles below this height [m]")
     p.add_argument("--plume-dx", type=float, default=8.0, help="x bin of the plume histogram [m] (default 8)")
+    p.add_argument("--no-survivor-pass", action="store_true",
+                   help="skip the first pass over the index files (no survivor-weighted plume)")
     p.add_argument("--snap-every", type=int, default=5, help="snapshot every this many outputs, 0 = none (default 5)")
     p.add_argument("--snap-fraction", type=float, default=0.125, help="fraction of particles in snapshots")
     return p.parse_args()
@@ -84,6 +91,17 @@ def main():
     n_plume_age = max(available) - a.release_start + 1 if available else 1
     per_age = outputs_per_age(available, a.release_start, a.release_every, max(n_plume_age, 1))
     plume_weight = np.where(per_age > 0, 1.0 / np.where(per_age > 0, per_age, 1.0), 0.0)
+    alive = np.zeros(per_age.size)
+    if not a.no_survivor_pass:
+        t0 = time.time()
+        for n in available:                                # first pass: upstream particles alive per age
+            ids = load_step(a.bin_dir, n, fields=("index",), ranks=find_ranks(a.bin_dir, n))["index"]
+            k, _ = decode_ids(ids)
+            age = age_in_outputs(ids, n, a.release_start, a.release_every)
+            ok = upstream[np.clip(k, 0, sx.size + 1)] & (age >= 0) & (age < alive.size)
+            alive += np.bincount(age[ok], minlength=alive.size)[: alive.size]
+        print(f"survivor pass: {len(available)} index outputs in {time.time() - t0:.0f} s", flush=True)
+    surv_weight = survivor_weights(alive, int(upstream.sum()))
 
     t0, used = time.time(), []
     for n in available:
@@ -99,6 +117,8 @@ def main():
         add_age(age_acc, age[up], pos[up, 2], pos[up, 0] - src_x[k[up]])
         ok = up & (age >= 0) & (age < plume_weight.size)
         add_plume(plume_acc, pos[ok, 0] - src_x[k[ok]], pos[ok, 2], plume_weight[age[ok]])
+        if not a.no_survivor_pass:
+            add_plume(plume_acc, pos[ok, 0] - src_x[k[ok]], pos[ok, 2], surv_weight[age[ok]], key="plume_surv_hist")
         if with_vel:
             v = particle_velocities(d, a.c_ref, flg_particle=1)
             add_height(height_acc, pos[:, 2], v["total"], v["sgs"])
@@ -121,7 +141,13 @@ def main():
     meta.update({"outputs_read": len(used), "first_read": used[0], "last_read": used[-1],
                  "n_upstream_sources": int(upstream.sum())})
     meta["release_interval"] = a.release_every * a.dt_output
-    save_reduced(os.path.join(a.out, "reduced.npz"), meta, age_acc, height_acc, x_acc, plume_acc)
+    meta["survivor_pass"] = not a.no_survivor_pass
+    if a.no_survivor_pass:
+        del plume_acc["plume_surv_hist"]
+    ages = {"plume_outputs_per_age": per_age}
+    if not a.no_survivor_pass:
+        ages["plume_alive_per_age"] = alive
+    save_reduced(os.path.join(a.out, "reduced.npz"), meta, age_acc, height_acc, x_acc, plume_acc, ages)
     print(f"[SUCCESS] {len(used)} outputs reduced in {time.time() - t0:.0f} s -> {a.out}")
 
 

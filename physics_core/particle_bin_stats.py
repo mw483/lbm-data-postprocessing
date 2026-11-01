@@ -151,17 +151,30 @@ def new_plume_acc(dx_edges, z_edges):
     One 2D histogram over (x - x_source, z), every particle weighted by 1 / (number of outputs read at which
     its age can occur); with that weight, every age counts once per release, so plume_concentration()
     turns the sum into the steady crosswind-integrated concentration of one continuous point source.
+    "plume_surv_hist" is the same histogram with the survivor weight (survivor_weights).
     """
     nd, nz = len(dx_edges) - 1, len(z_edges) - 1
     return {"plume_dx_edges": np.asarray(dx_edges, dtype=float), "plume_z_edges": np.asarray(z_edges, dtype=float),
-            "plume_hist": np.zeros(nd * nz)}
+            "plume_hist": np.zeros(nd * nz), "plume_surv_hist": np.zeros(nd * nz)}
 
 
-def add_plume(acc, dx, z, weight):
+def survivor_weights(alive_per_age, n_sources):
+    """Plume weight that counts every age once per release *of the surviving particles*: n_sources / alive(a).
+
+    alive_per_age[a] = particles of age a summed over all outputs read (the age_count of a first pass).
+    With this weight plume_concentration() gives C_y / Q of the survivors, which removes the loss of
+    particles through the domain edges (valid while the lost particles are statistically like the
+    survivors, e.g. y-edge losses in a flow that is uniform in y). Ages without particles get weight 0.
+    """
+    alive = np.asarray(alive_per_age, dtype=float)
+    return np.where(alive > 0, n_sources / np.where(alive > 0, alive, 1.0), 0.0)
+
+
+def add_plume(acc, dx, z, weight, key="plume_hist"):
     """Add particles with downwind distance dx = x - x_source [m], height z [m] and weight 1 / S(age)."""
     nz = acc["plume_z_edges"].size - 1
     bd, bz = _bins(dx, acc["plume_dx_edges"]), _bins(z, acc["plume_z_edges"])
-    _add(acc, "plume_hist", np.where((bd >= 0) & (bz >= 0), bd * nz + bz, -1), weight)
+    _add(acc, key, np.where((bd >= 0) & (bz >= 0), bd * nz + bz, -1), weight)
 
 
 def outputs_per_age(outputs, release_start, release_every, n_age):
@@ -231,16 +244,45 @@ def x_stats(acc):
     }
 
 
-def plume_concentration(acc, n_sources, release_interval):
+def survival_by_age(acc, n_sources, per_age):
+    """Fraction of the released particles of each age still in the domain.
+
+    acc["age_count"][a] counts the particles of age a summed over the outputs read; if none were lost it
+    would be n_sources * S(a) (S = outputs_per_age). Returns an array over the age bins of acc.
+    """
+    n = acc["age_count"]
+    expected = n_sources * np.asarray(per_age, dtype=float)[: n.size]
+    expected = np.pad(expected, (0, n.size - expected.size))
+    return _div(n, expected)
+
+
+def leading_edge(acc, quantile=0.99):
+    """Per age: (dx reached by the given fraction of particles, largest dx with a particle) [m], from age_hist_dx.
+
+    Bin upper edges are returned, so both are upper bounds within one bin width.
+    """
+    _, hist = age_histograms(acc)
+    upper = acc["age_dx_edges"][1:]
+    total = hist.sum(axis=1)
+    cum = np.cumsum(hist, axis=1)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        frac = cum / total[:, None]
+    q = np.array([upper[np.argmax(f >= quantile)] if t > 0 else np.nan for f, t in zip(frac, total)])
+    last = np.array([upper[np.nonzero(h)[0][-1]] if t > 0 else np.nan for h, t in zip(hist, total)])
+    return q, last
+
+
+def plume_concentration(acc, n_sources, release_interval, key="plume_hist"):
     """Steady crosswind-integrated concentration per unit release rate, C_y / Q [s/m^2], on (dx, z) bins.
 
     For a continuous point source C_y(x, z) / Q = integral over age of p(x, z | age); with one particle per
     source per release interval tau, the weighted histogram H gives C_y / Q = H tau / (n_sources dx dz).
     Returns (dx centres, z centres, array [n_dx, n_z]). Only complete for distances that particles reach
-    within the oldest age read.
+    within the oldest age read. key="plume_surv_hist" uses the survivor-weighted histogram (weight
+    n_sources / particles alive at that age), i.e. the concentration as if no particle had left the domain.
     """
     dx_e, z_e = acc["plume_dx_edges"], acc["plume_z_edges"]
-    h = acc["plume_hist"].reshape(dx_e.size - 1, z_e.size - 1)
+    h = acc[key].reshape(dx_e.size - 1, z_e.size - 1)
     cy = h * release_interval / (n_sources * np.diff(dx_e)[:, None] * np.diff(z_e)[None, :])
     return 0.5 * (dx_e[1:] + dx_e[:-1]), 0.5 * (z_e[1:] + z_e[:-1]), cy
 
