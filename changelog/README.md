@@ -23,6 +23,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-01 | [2026-11-01_cbl-scales-and-station-profiles.md](2026-11-01_cbl-scales-and-station-profiles.md) | Branch `analysis/scalar2-outputs`: z_i, w*, t* per window vs jump model, profiles in mixed-layer scaling with Lenschow 1980 and linear-flux curves, profiles at x stations with spread as error bar, run set `flat2048_long`. Run on the 512 runs only; reference formulas still [U]; particle validation not included | `7bc165d` `7d661fe` `c59274f` |
 | 2026-11-01 | [2026-11-01_particle-dispersion-validation.md](2026-11-01_particle-dispersion-validation.md) | Branch `analysis/scalar2-outputs`: particle validation in convection (item 3 of the plan): per-source plume histogram in the reducer, `plot_dispersion_validation` against Willis & Deardorff / Stull ch. 19 and the unstable Prairie Grass runs, Prairie Grass reader, Monin-Obukhov fit [U]; a run in `run_sets.yaml` can be given as explicit folders (kaka's Z: drive). Synthetic data and real Prairie Grass only; not run on real particles, reducer must be rerun for the long run | `3093e32` `9589d36` `a65cf38` |
 | 2026-11-01 | [2026-11-01_survival-and-near-wall-checks.md](2026-11-01_survival-and-near-wall-checks.md) | Branch `analysis/scalar2-outputs`: checks that particle losses at the domain edges do not distort the long-run dispersion figures: survivor-weighted plume (reducer first pass, `--no-survivor-pass`), survival and plume front with the first exit marked on every X figure, share above z_i, per-age z_i and w*, near-wall zoom (0-40 m). Unit tests and synthetic runs only, not run on the long-run data; reducer must be rerun on TSUBAME | `fb1c21c` `1633136` |
+| 2026-11-02 | [2026-11-02_repo1-scripts-folder.md](2026-11-02_repo1-scripts-folder.md) | Branch `analysis/scalar2-outputs`: the 31 scripts for the older repo 1 runs (added 2026-06-01 to 2026-10-06) moved to `scripts/repo1_runs/` in four topic folders (pure renames, history kept); their `../figures` style paths now start from `REPO_ROOT`; new folder README. Compiled and import-checked only, scripts not run | `23ff4bb` `4425351` |
 
 ## Glossary
 
@@ -69,6 +70,8 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Survivor weight | n_sources / alive(age): weight that makes the plume concentration count only the particles still in the domain, as if none had left |
 | First exit | First age at which particles from the most downstream upstream source can leave through the outflow; statistics right of it are biased |
 | Monin-Obukhov fit | Fit of u*, theta*, L to wind and temperature profiles near the ground (Businger-Dyer forms) [U] |
+| Repo 1 | The older LBM repo (`mw483/lbm-cuda-project`) whose runs (flat_3072, cube_3072, 16m approach, short roughness) the scripts in `scripts/repo1_runs/` read |
+| `REPO_ROOT` | Repository root folder, from `data_loaders.local_paths`; scripts build output paths from it so they do not depend on the working directory |
 
 ## Inspecting the changes
 
