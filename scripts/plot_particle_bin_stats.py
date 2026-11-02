@@ -31,9 +31,9 @@ from plotting_core.particle_bin_plots import plot_age_pdf, plot_lines_grid, plot
 PROF_STEP = 175001          # solver profile window for the Eulerian comparison (200 s ending at 1400 s)
 THETA0 = 300.0              # reference potential temperature [K] for w* (header out_ref)
 MIN_COUNT = 2000            # age bins with fewer particle samples are not plotted
-RANK_EDGES = (256.0, 512.0, 768.0)   # x of the GPU rank boundaries [m] (4 ranks over 1024 m)
-ZMAX_PDF = 500.0            # top of the PDF figure [m]
-ZMAX_PROFILE = 500.0        # top of the velocity profile figure [m]
+RANK_EDGES = (512.0, 1024.0, 1536.0)   # x of the GPU rank boundaries [m] (4 ranks over 1024 m)
+ZMAX_PDF = 1000.0            # top of the PDF figure [m]
+ZMAX_PROFILE = 1000.0        # top of the velocity profile figure [m]
 
 
 def main():
