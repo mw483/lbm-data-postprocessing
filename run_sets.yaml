@@ -36,7 +36,4 @@ sets:
   flat2048_long:
     description: long convective run flat 2048x128x704 (4096 x 256 x 1408 m, 2400 s, sources x 8-248 m, dist seed 12345, SGS fix)
     runs:
-      convective_long:     # kaka's rclone drive on the lab PC (2026-11-01)
-        output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
-        particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess
-        particle_reduced: Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced
+      convective_long: flat_2048x128x704/20261030_scalar2_long   # lab PC D:/lbm_results (moved there 2026-11-02)
