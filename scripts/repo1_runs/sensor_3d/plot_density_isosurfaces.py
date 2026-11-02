@@ -4,6 +4,7 @@ from pathlib import Path
 # Ensure the script can find the root repository directory
 
 # Import the plotting function from the core module
+from data_loaders.local_paths import REPO_ROOT
 from plotting_core.density_plots import plot_3d_isopleths
 
 start_step = 1200
@@ -18,7 +19,7 @@ def main():
     density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260612_particle_cube_3072", f"{start_step}-{end_step}_density")
     
     output_path = os.path.join(
-        "./figures", "density", "3d_isosurfaces", "20260612_particle_cube_3072",
+        str(REPO_ROOT / "figures"), "density", "3d_isosurfaces", "20260612_particle_cube_3072",
         f"{start_step}-{end_step}",
         f"density_3d_isosurface_{start_step}-{end_step}.png"
     )

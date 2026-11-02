@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import numpy as np
 import pandas as pd
@@ -30,7 +31,7 @@ def main():
     sensor_paths = {"8x8x8": "sensor_8x8x8",
                     "40x40x8": "sensor_40x40x8"}
 
-    output_dir = rf"../figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/LBM_Case_comparisons"
+    output_dir = str(REPO_ROOT / f"figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/LBM_Case_comparisons")
     os.makedirs(output_dir, exist_ok=True)
 
     # Establish the case conditions:

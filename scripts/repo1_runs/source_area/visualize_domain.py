@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 
 
@@ -13,7 +14,7 @@ def main():
     flat_pos_path = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-cuda-project\particle_position\pos_tsubame_flat.txt"
     # cube_pos_path = r"Z:\particle_position\pos_cube_3072.txt"
     
-    output_dir = r"../figures/map_visualizations"
+    output_dir = str(REPO_ROOT / "figures/map_visualizations")
     
     # Sensor Coordinates & Grid Resolution
     sensor_x = 3672.0

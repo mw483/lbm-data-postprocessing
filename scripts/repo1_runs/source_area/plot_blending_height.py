@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,7 +22,7 @@ sensor_z = 20.0
 target_blending_height = 10.0
 delta_z = sensor_z - target_blending_height  # Vertical separation distance
 
-output_dir = Path(f"../figures/blending_height/target_blending_{int(target_blending_height)}")
+output_dir = REPO_ROOT / f"figures/blending_height/target_blending_{int(target_blending_height)}"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 # ==============================================================================

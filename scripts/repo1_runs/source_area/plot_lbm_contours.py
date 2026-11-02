@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import csv
 
@@ -9,7 +10,7 @@ from plotting_core.comparative_plots import plot_footprint_with_contours
 def main():
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    output_dir = r"../figures/20260527_flat_footprints/contour_analysis"
+    output_dir = str(REPO_ROOT / "figures/20260527_flat_footprints/contour_analysis")
     
     sensors = [
         (600, 128, 5),

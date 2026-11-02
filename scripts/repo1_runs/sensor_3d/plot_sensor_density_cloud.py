@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 
 
@@ -23,7 +24,7 @@ def main():
     loc_folder = f"loc_{sensor_center[0]}_{sensor_center[1]}_{sensor_center[2]}"
     
     output_path = os.path.join(
-        "../figures", "20260803_particle_cube_16mapproach_clouds", sensor_folder, loc_folder,
+        str(REPO_ROOT / "figures"), "20260803_particle_cube_16mapproach_clouds", sensor_folder, loc_folder,
         f"density_cloud_sensor_{target_sensor_id}.png"
     )
 

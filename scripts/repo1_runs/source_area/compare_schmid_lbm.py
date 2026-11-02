@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import numpy as np
 
@@ -20,8 +21,8 @@ def main():
     # 1. Paths and Setup
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    params_path = r"../physics_core/metrics/schmid_params.json"
-    output_dir = r"../figures/flat_domain/sensor_40x40x8/20260527_schmid_comparisons"
+    params_path = str(REPO_ROOT / "physics_core/metrics/schmid_params.json")
+    output_dir = str(REPO_ROOT / "figures/flat_domain/sensor_40x40x8/20260527_schmid_comparisons")
     os.makedirs(output_dir, exist_ok=True)
     
     x_bounds = [0, 1024]

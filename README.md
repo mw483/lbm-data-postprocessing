@@ -27,7 +27,8 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 | `data_loaders/` | Readers for LBM wind CSVs, C++ particle-postprocessing outputs, raw particle `.bin` files and maps |
 | `physics_core/` | Calculations: turbulence statistics, footprints (Kljun FFP, Schmid), particle transit times |
 | `plotting_core/` | Plotting functions (matplotlib, PyVista) |
-| `scripts/` | One script per figure or analysis. Edit the settings at the top of `main()` and run it. |
+| `scripts/` | One script per figure or analysis. Edit the settings at the top of `main()` and run it. Scripts for the LBM-city scalar2 runs (2026-10-16 on) sit directly in `scripts/` |
+| `scripts/repo1_runs/` | Scripts for the older repo 1 runs (June to early October 2026), by topic: `sensor_3d/`, `sensor_transit_time/`, `basic_statistics/`, `source_area/`. See [scripts/repo1_runs/README.md](scripts/repo1_runs/README.md) |
 | `tools/` | Small helpers, e.g. inspecting a particle `.bin` file |
 | `tests/` | `pytest` checks for the loaders and calculations |
 | `archive/` | Retired scripts and functions, kept for reference and no longer maintained |
@@ -49,8 +50,8 @@ Output goes to `<figures>/<set>/<topic>/` (e.g. `figures/flat512_sgsfix/particle
 
 ```sh
 pip install -e .[video]                                  # once, for the MP4 backup
-python scripts/demo_presentation.py --record             # once before the talk: builds the cache, writes MP4/PNG backups
-python scripts/demo_presentation.py                      # live: isopleths -> velocity lines -> TTD
+python scripts/repo1_runs/sensor_3d/demo_presentation.py --record             # once before the talk: builds the cache, writes MP4/PNG backups
+python scripts/repo1_runs/sensor_3d/demo_presentation.py  # live: isopleths -> velocity lines -> TTD
 ```
 
 Flat and cube array side by side, one shared camera. Close a window to go to the next stage. Settings are at the top of the script.
@@ -126,6 +127,6 @@ python scripts/animate_particles.py --mode 3d       # PyVista point cloud (off-s
 Ages come from the particle ID (release number). Age statistics use only sources with x <= 104 m, so particles do not leave through the outflow (x = 1024 m) within the plotted ages. `sgs_along_x.png` shows the SGS velocity of near-ground particles along x, with the GPU rank boundaries marked.
 
 ```sh
-python scripts/analyze_particle_statistics.py
+python scripts/repo1_runs/basic_statistics/analyze_particle_statistics.py   # repo 1 runs
 pytest                      # run the checks
 ```

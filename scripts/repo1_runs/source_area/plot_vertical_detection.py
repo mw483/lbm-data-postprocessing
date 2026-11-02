@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import sys
 import glob
@@ -10,7 +11,7 @@ from plotting_core.sensitivity_plots import plot_vertical_detection_profile
 def main():
     # 1. Paths (Using the newly planned directory architecture)
     input_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_40x40x8\1200-1800_footprint"
-    output_dir = r"../figures/flat_domain/sensor_40x40x8/sensitivity"
+    output_dir = str(REPO_ROOT / "figures/flat_domain/sensor_40x40x8/sensitivity")
     
     # Find all footprint CSVs for the specific sensor X, Y location
     sensor_x, sensor_y = 600, 128

@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import pandas as pd
 import numpy as np
@@ -6,8 +7,8 @@ from plotting_core.footprint_metrics_plots import plot_regression
 
 def main():
     # File paths
-    metrics_csv = r"../figures/20260527_flat_footprints/contour_analysis/peak_distance_metrics.csv"
-    output_dir = r"../figures/20260527_flat_footprints/metrics"
+    metrics_csv = str(REPO_ROOT / "figures/20260527_flat_footprints/contour_analysis/peak_distance_metrics.csv")
+    output_dir = str(REPO_ROOT / "figures/20260527_flat_footprints/metrics")
     
     print(f"Loading metrics from {metrics_csv}...")
     try:

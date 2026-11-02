@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import sys
 import numpy as np
@@ -24,7 +25,7 @@ def main():
     # base_dir = rf"Y:\Particle_PostProcess_Outputs\20260707_particle_flat_shortroughness_4mvel\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
     base_dir = rf"Y:\Particle_PostProcess_Outputs\20260612_particle_cube_3072\sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}"
     pos_file = r"Y:\particle_position\pos_cube_3072.txt"
-    params_path = r"../physics_core/metrics/cube_params.json"
+    params_path = str(REPO_ROOT / "physics_core/metrics/cube_params.json")
     # lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
 
     # NEW: XZ Matrix Paths
@@ -44,7 +45,7 @@ def main():
     uw_csv = os.path.join(base_out, f"xz_yav_uw00180000_000{rank_x}.csv")
     vv_csv = os.path.join(base_out, f"xz_yav_vv00180000_000{rank_x}.csv")
 
-    output_dir = rf"../figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/20260612_output_cube_3072"
+    output_dir = str(REPO_ROOT / f"figures/flat_domain/sensor_{sensor_size_x}x{sensor_size_y}x{sensor_size_z}/20260612_output_cube_3072")
     os.makedirs(output_dir, exist_ok=True)
     
     x_bounds = [0.0, 1024.0]

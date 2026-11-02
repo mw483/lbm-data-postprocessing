@@ -1,11 +1,11 @@
 # scripts/run_absolute_line_footprint.py
+from data_loaders.local_paths import REPO_ROOT
 import os
 import numpy as np
 
 # Apply your exact modular path and repository management configuration strings
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))
+repo_root = str(REPO_ROOT / "figures/spanwise_analysis/flat_shortroughness/height20")
 
 # Import your verified modular data loaders and processors
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts

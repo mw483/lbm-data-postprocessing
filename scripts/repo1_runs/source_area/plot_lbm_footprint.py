@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 
 # Add the project root to the system path to allow module imports
@@ -11,7 +12,7 @@ def main():
     # Update these base paths to match your local/mounted Z: drive setup
     base_dir = r"Z:\Particle_PostProcess_Outputs\20260527_particle_flat_3072\sensor_8x8x8"
     pos_file = r"Z:\particle_position\particle_position.txt"
-    output_dir = r"../figures/flat_domain/sensor_8x8x8/20260527_flat_footprints/raw_footprints"
+    output_dir = str(REPO_ROOT / "figures/flat_domain/sensor_8x8x8/20260527_flat_footprints/raw_footprints")
     
     # List of sensors to process (x, y, z)
     sensors = [

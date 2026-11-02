@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import sys
 import numpy as np
@@ -11,7 +12,7 @@ from plotting_core.profile_plots import plot_advection_vs_fetch, plot_vertical_w
 def main():
     # 1. Paths
     lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
-    params_path = r"../physics_core/metrics/schmid_params.json"
+    params_path = str(REPO_ROOT / "physics_core/metrics/schmid_params.json")
     
     # Exact output directory requested
     output_dir = r"C:\Users\Mikael Wijaya\Documents\GitHub\lbm-data-postprocessing\figures\20260527_schmid_comparisons\effective_velocity"

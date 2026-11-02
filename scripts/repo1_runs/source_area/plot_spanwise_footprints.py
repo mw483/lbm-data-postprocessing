@@ -1,13 +1,12 @@
 # scripts/run_spanwise_footprint_pipeline.py
+from data_loaders.local_paths import REPO_ROOT
 import os
 import numpy as np
 
 # 1. Clean Path Management: Separate Python path tracking from file export paths
-script_dir = os.path.dirname(os.path.abspath(__file__))
-python_root = os.path.abspath(os.path.join(script_dir, '..'))
 
 # Explicitly point to your professor's requested figures subdirectory
-figure_output_dir = os.path.abspath(os.path.join(script_dir, "../figures/spanwise_analysis/flat_shortroughness/height20"))
+figure_output_dir = str(REPO_ROOT / "figures/spanwise_analysis/flat_shortroughness/height20")
 
 # Import your verified modular I/O and Processing libraries
 from data_loaders.footprint_io import load_source_positions, load_footprint_counts

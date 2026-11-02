@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 from pathlib import Path
 
@@ -18,7 +19,7 @@ def main():
     density_directory = os.path.join("Y:", "Particle_PostProcess_Outputs", "20260612_particle_cube_3072", f"{start_step}-{end_step}_density")
     
     output_path = os.path.join(
-        "../figures", "density", "3d_dvr", "20260612_particle_cube_3072",
+        str(REPO_ROOT / "figures"), "density", "3d_dvr", "20260612_particle_cube_3072",
         f"{start_step}-{end_step}",
         f"density_3d_dvr_{start_step}-{end_step}.png"
     )

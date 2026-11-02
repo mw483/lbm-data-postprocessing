@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 
 # Ensure modules can be imported
@@ -35,7 +36,7 @@ def main():
     
     # 4. Update the filename to reflect that this is a True Pathway plot
     output_path = os.path.join(
-        "../figures", "20260630_particle_flat_16mapproach_trajectories", sensor_folder, loc_folder,
+        str(REPO_ROOT / "figures"), "20260630_particle_flat_16mapproach_trajectories", sensor_folder, loc_folder,
         f"true_pathways_sensor_{target_sensor_id}_steps_{start_step}-{end_step}.png"
     )
     

@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import sys
 import json
@@ -12,7 +13,7 @@ def main():
     # Assuming the naming convention matches the um file
     vv_file = os.path.join(base_dir, "xy_vv00180000_0000.csv")
     vm_file = os.path.join(base_dir, "xy_vm00180000_0000.csv")
-    json_path = r"../physics_core/metrics/schmid_params.json"
+    json_path = str(REPO_ROOT / "physics_core/metrics/schmid_params.json")
     
     # 2. Domain and Sensor Setup
     grid_res = 2.0

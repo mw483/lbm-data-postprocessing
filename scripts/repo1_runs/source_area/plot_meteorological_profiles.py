@@ -1,3 +1,4 @@
+from data_loaders.local_paths import REPO_ROOT
 import os
 import numpy as np
 import pandas as pd
@@ -7,9 +8,9 @@ from data_loaders.config_loader import load_json_config
 
 def main():
     # 1. Paths
-    params_path = r"../physics_core/metrics/schmid_params.json"
+    params_path = str(REPO_ROOT / "physics_core/metrics/schmid_params.json")
     lbm_profile_csv = r"Z:\20260527_output_flat_3072\prof00180000_0000.csv"
-    output_dir = r"../figures/flat_domain/metrics"
+    output_dir = str(REPO_ROOT / "figures/flat_domain/metrics")
     os.makedirs(output_dir, exist_ok=True)
     
     # 2. Load Parameters
