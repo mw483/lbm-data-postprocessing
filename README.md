@@ -91,7 +91,7 @@ python scripts/plot_dispersion_validation.py --set flat2048_long      # particle
 
 The last three come from the plan in `planning/cbl_scales_and_particle_validation_plan_2026-10-30.md` (project files). Each script's docstring states what the figure measures, why, the reference it is compared with ([U] = formula not yet checked in the source) and the normalisation. The settings at the top of `plot_cbl_scales.py` (initial neutral layer 300 m, lapse rate 0.01 K/m, flux 0.1 K m/s) copy LBM-city `src/Define_user.h` and must be changed for runs with another initial state.
 
-The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side) and `<case>_step*.png` (one case each), plus `combined.gif` / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
+The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side, only for sets with more than one run) and `<case>_step*.png` (one case each), plus `combined.gif` (same condition) / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
 
 `data_loaders/lbm_output.py` reads every plane layout (xy, xy_ag, xz, yz, xz_yav), stitches the ranks and reads `prof*.csv` and `header.txt`. The files hold raw moments (`uu` = <u u>); `physics_core/moments.py` turns them into variances, covariances, TKE and skewness.
 
