@@ -131,3 +131,60 @@ def test_image_transform_matches_cell_to_crs():
     for i, j in ((0, 0), (3, 1), (2, 0)):
         r, c = image_index(i, j, geo)
         assert t @ (c + 0.5, r + 0.5) == cell_to_crs(i, j, geo)
+
+
+# --- cut-out boxes -------------------------------------------------------------
+from physics_core.urban_morphology import best_shift, blockage_by_column, box_summary  # noqa: E402
+
+
+def test_blockage_by_column():
+    hb = np.zeros((4, 3))
+    hb[0, 1] = 10.0                      # one 10 m cell in column 1
+    hb[:, 2] = 50.0                      # a full row of 50 m, cut at a 20 m top
+    b = blockage_by_column(hb, top_m=20.0, dx=2.0)
+    np.testing.assert_allclose(b, [0.0, 10 * 2 / (8 * 20), 1.0])
+
+
+def test_best_shift_prefers_fewest_then_smallest():
+    counts = np.array([5, 0, 3, 3, 0, 5, 5])
+    assert best_shift(counts, 2, 4, 1) in (-1, 1)  # cost 3 either way, 6 unshifted
+    assert best_shift(np.array([1, 1, 1, 1]), 1, 3, 1) == 0
+    assert best_shift(np.array([0, 9, 9, 9, 9]), 1, 5, 3) == -1  # only -1 fits inside the map
+
+
+def test_box_summary_numbers():
+    hb = np.zeros((20, 40))
+    hb[2:6, 2:14] = 6.0                  # 4 x 12 block (min side 4 cells), 6 m
+    hb[10, 30] = 12.0                    # one-cell building
+    hv = np.zeros_like(hb)
+    hv[15:17, 20:22] = 12.0              # 4 tree cells
+    topo = np.ones_like(hb)
+    m = maps_from(hb, topo=topo, hv=hv)
+    s = box_summary(m, (0, 40, 0, 20), dx=2.0, nz=10, run_s=80.0, source_step=1, min_cells=(10,))
+    n_b = 48 + 1
+    assert s["lambda_p"] == pytest.approx(n_b / 800)
+    assert s["h_max_m"] == 12.0 and s["default_height_share"] == pytest.approx(48 / 49)
+    assert s["tree_cover"] == pytest.approx(4 / 800)
+    assert s["buildings"] == 2 and s["one_cell_buildings_share"] == 0.5
+    assert s["narrower_10_cells_share"] == 1.0
+    assert s["sources"] == 800 - n_b - 4
+    assert s["ground_range_m"] == 0.0
+    assert s["top_m"] == 20.0 and s["top_over_hmax"] == pytest.approx(20 / 12)
+    # column 2: four 6 m cells over a 40 m wide, 20 m high section
+    assert s["blockage_max"] == pytest.approx(4 * 6 * 2 / (40 * 20))
+    assert s["edge_build_cells_i0"] == 0 and s["edge_build_cells_j0"] == 0
+    assert s["wall_hours_4gpu_est"] > 0
+
+
+def test_box_summary_street_box_moves_off_buildings():
+    hb = np.zeros((10, 30))
+    hb[:, 10] = 6.0                      # a wall of buildings on column 10
+    s = box_summary(maps_from(hb), (10, 20, 0, 10), seam_search=2)
+    assert s["edge_build_cells_i0"] == 10
+    i0, i1 = (int(v) for v in s["shifted_box"].split()[:2])
+    assert i0 != 10 and abs(i0 - 10) <= 2 and i1 - i0 == 10
+
+
+def test_box_summary_rejects_outside_box():
+    with pytest.raises(ValueError):
+        box_summary(maps_from(np.zeros((4, 4))), (0, 5, 0, 4))

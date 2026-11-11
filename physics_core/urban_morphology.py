@@ -129,3 +129,140 @@ def tile_stats(hb, hv, tile):
         "h_av": b.mean(axis=(1, 3)),
         "tree_cover": ((v > 0) & ~is_b).mean(axis=(1, 3)),
     }
+
+
+# =============================================================================
+# Cut-out boxes (choosing a piece of the map to simulate)
+# =============================================================================
+# Cost model: the flat benchmark run 512 x 128 x 1024 cells took 0.068 s per
+# step on one TSUBAME node_f (4 GPUs), dt = 0.008 s at 2 m cells (20261026_scalar2,
+# 180005 steps in 3:24:37). Wall time is scaled linearly with the cell count [est].
+BENCH_CELLS = 512 * 128 * 1024
+BENCH_S_PER_STEP = 0.068
+DT_2M = 0.008
+ID_SOURCE_LIMIT = 214_748          # int32 particle IDs with ID_DIGIT 4: (2^31 - 1) // 10000
+
+
+def blockage_by_column(hb, top_m, dx):
+    """
+    Share of each y-z cross-section (one per column i, wind along +i) that is
+    building: sum over j of the building height x dx / (domain width x top).
+    The periodic stand-in for the AIJ blockage ratio (Tominaga et al. 2008,
+    sec. 3.1: < 3%), which in an inflow/outflow domain uses the frontal
+    projection of all buildings. Heights above the top are cut at the top.
+    """
+    h = np.minimum(np.asarray(hb, dtype=float), top_m)
+    return h.sum(axis=0) * dx / (h.shape[0] * dx * top_m)
+
+
+def best_shift(counts, a0, a1, search):
+    """
+    Shift d in -search..search (kept inside the map) that minimises
+    counts[a0 + d] + counts[a1 - 1 + d], i.e. the building cells on both edges
+    of a periodic pair; ties go to the smallest |d|.
+    """
+    n = len(counts)
+    shifts = np.arange(max(-search, -a0), min(search, n - a1) + 1)
+    c = np.asarray(counts)
+    cost = c[a0 + shifts] + c[a1 - 1 + shifts]
+    return int(shifts[np.lexsort((np.abs(shifts), cost))[0]])
+
+
+def box_summary(maps, box, dx=2.0, nz=None, run_s=3600.0, source_step=8,
+                default_height=6.0, seam_search=16, min_cells=(10, 16)):
+    """
+    Numbers for one candidate cut-out box = (i0, i1, j0, j1), end exclusive,
+    computed on the full-resolution map. Wind is taken along +i (map x).
+
+    Returns a flat dict (see the keys) of:
+    - size and position; lambda_p, H_av, building height stats, share of
+      building cells at `default_height` (Jakarta: 6 m default in the OSM data);
+    - tree cover, ground range;
+    - periodic seams: building cells on each edge and the ground step across
+      each seam, plus the same-size box shifted by up to +-seam_search cells
+      whose seams cross the fewest building cells (street-aligned edges);
+    - resolution: buildings (4-connected groups inside the box) narrower than
+      each value in min_cells, by count and by volume (AIJ/COST >= 10 cells per
+      side; professor >= 16);
+    - with nz: domain top, top / H_max (AIJ >= 5), length / H_max (AIJ >= 10,
+      COST 15), blockage max and mean, cells and wall-time estimate;
+    - open ground (no building, no tree) and sources on a source_step grid.
+    """
+    i0, i1, j0, j1 = (int(v) for v in box)
+    ny, nx = maps["topo"].shape
+    if not (0 <= i0 < i1 <= nx and 0 <= j0 < j1 <= ny):
+        raise ValueError(f"[ERROR] box {box} is outside the {nx} x {ny} map")
+    hb_all, hv_all = object_heights(maps)
+    hb, hv = hb_all[j0:j1, i0:i1], hv_all[j0:j1, i0:i1]
+    topo = np.asarray(maps["topo"][j0:j1, i0:i1], dtype=float)
+    is_b = hb > 0
+    n_i, n_j = i1 - i0, j1 - j0
+    h_max = float(hb.max())
+
+    out = {"i0": i0, "i1": i1, "j0": j0, "j1": j1, "n_i": n_i, "n_j": n_j,
+           "length_x_m": n_i * dx, "width_y_m": n_j * dx,
+           "lambda_p": plan_area_fraction(hb), "H_av_m": area_weighted_height(hb),
+           "lambda_f_x": frontal_area_index(hb, axis=1),
+           "h_mean_m": float(hb[is_b].mean()) if is_b.any() else np.nan,
+           "h_p50_m": float(np.median(hb[is_b])) if is_b.any() else np.nan,
+           "h_max_m": h_max,
+           "default_height_share": float((hb[is_b] == default_height).mean()) if is_b.any() else np.nan,
+           "tree_cover": float(((hv > 0) & ~is_b).mean()),
+           "ground_min_m": float(topo.min()), "ground_max_m": float(topo.max()),
+           "ground_range_m": float(topo.max() - topo.min())}
+
+    # periodic seams
+    out.update({"edge_build_cells_i0": int(is_b[:, 0].sum()), "edge_build_cells_i1": int(is_b[:, -1].sum()),
+                "edge_build_cells_j0": int(is_b[0, :].sum()), "edge_build_cells_j1": int(is_b[-1, :].sum()),
+                "seam_step_x_mean_m": float(np.abs(topo[:, 0] - topo[:, -1]).mean()),
+                "seam_step_x_max_m": float(np.abs(topo[:, 0] - topo[:, -1]).max()),
+                "seam_step_y_mean_m": float(np.abs(topo[0, :] - topo[-1, :]).mean()),
+                "seam_step_y_max_m": float(np.abs(topo[0, :] - topo[-1, :]).max())})
+    # same-size box shifted by up to +-seam_search cells so that both seams of
+    # each periodic pair cross the fewest building cells (keeps the cell counts
+    # chosen for the GPU split)
+    col_counts = (hb_all[j0:j1, :] > 0).sum(axis=0)       # building cells per column, box rows only
+    row_counts = (hb_all[:, i0:i1] > 0).sum(axis=1)       # per row, box columns only
+    di = best_shift(col_counts, i0, i1, seam_search)
+    dj = best_shift(row_counts, j0, j1, seam_search)
+    out.update({"shifted_box": f"{i0 + di} {i1 + di} {j0 + dj} {j1 + dj}",
+                "shifted_edge_build_cells": int(col_counts[i0 + di] + col_counts[i1 - 1 + di]
+                                                + row_counts[j0 + dj] + row_counts[j1 - 1 + dj])})
+
+    # resolution of the buildings inside the box
+    labels, n = label_buildings(hb)
+    out["buildings"] = n
+    if n:
+        t = building_table(hb, labels, n, dx)
+        vol = t["n_cells"] * t["h_mean"]
+        out["one_cell_buildings_share"] = float((t["n_cells"] == 1).mean())
+        for m in min_cells:
+            narrow = t["min_side"] < m
+            out[f"narrower_{m}_cells_share"] = float(narrow.mean())
+            out[f"narrower_{m}_cells_volume_share"] = float(vol[narrow].sum() / vol.sum())
+    else:
+        out["one_cell_buildings_share"] = np.nan
+        for m in min_cells:
+            out[f"narrower_{m}_cells_share"] = np.nan
+            out[f"narrower_{m}_cells_volume_share"] = np.nan
+
+    # sources on open ground
+    open_ground = ~is_b & ~(hv > 0)
+    grid = open_ground[::source_step, ::source_step]
+    out.update({"open_ground_share": float(open_ground.mean()), "source_step_cells": source_step,
+                "sources": int(grid.sum()), "sources_vs_id_limit": float(grid.sum() / ID_SOURCE_LIMIT)})
+
+    # domain and cost for a chosen nz
+    if nz:
+        top = nz * dx
+        blk = blockage_by_column(hb, top, dx)
+        cells = n_i * n_j * nz
+        steps = int(round(run_s / DT_2M))
+        hours = cells / BENCH_CELLS * BENCH_S_PER_STEP * steps / 3600
+        out.update({"nz": int(nz), "top_m": top,
+                    "top_over_hmax": top / h_max if h_max > 0 else np.inf,
+                    "length_over_hmax": n_i * dx / h_max if h_max > 0 else np.inf,
+                    "width_over_top": n_j * dx / top,
+                    "blockage_max": float(blk.max()), "blockage_mean": float(blk.mean()),
+                    "cells_million": cells / 1e6, "run_s": run_s, "wall_hours_4gpu_est": hours})
+    return out
