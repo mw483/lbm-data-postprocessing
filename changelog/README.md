@@ -26,6 +26,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-02 | [2026-11-02_repo1-scripts-folder.md](2026-11-02_repo1-scripts-folder.md) | Branch `analysis/scalar2-outputs`: the 31 scripts for the older repo 1 runs (added 2026-06-01 to 2026-10-06) moved to `scripts/repo1_runs/` in four topic folders (pure renames, history kept); their `../figures` style paths now start from `REPO_ROOT`; new folder README. Compiled and import-checked only, scripts not run | `23ff4bb` `4425351` |
 | 2026-11-02 | [2026-11-02_flat2048-long-lab-pc-paths.md](2026-11-02_flat2048-long-lab-pc-paths.md) | Branch `analysis/scalar2-outputs`: `flat2048_long` goes back to the plain string form `flat_2048x128x704/20261030_scalar2_long` (long-run data moved to the lab PC `D:/lbm_results`; the `Z:` drive is on the laptop). `run_sets` loads and its test passes; not checked on the lab PC | `d6dd4d7` |
 | 2026-11-02 | [2026-11-02_xz-heatmaps-single-run.md](2026-11-02_xz-heatmaps-single-run.md) | Branch `analysis/scalar2-outputs`: `plot_xz_yav_heatmaps` writes `combined_step*.png`, `combined.gif` and `combined.mp4` only for sets with more than one run; per-case output and colour scale unchanged. Tested on a one-run set (512 convective wind output); two-run set not rechecked | `3ce8676` |
+| 2026-11-11 | [2026-11-11_tile-explorer.md](2026-11-11_tile-explorer.md) | Branch `analysis/scalar2-outputs`: `box_summary` (numbers for one cut-out box from the full 2 m map: lambda_p, heights, periodic seams, AIJ checks, source count, wall-time estimate) and `explore_tiles.py` window to pick and save candidate boxes; `view_map_3d.py --box`. Synthetic map and synthetic events only, not run on the real map or a real display | `5dd6a7a` `4553092` |
 
 ## Glossary
 
@@ -74,6 +75,10 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Monin-Obukhov fit | Fit of u*, theta*, L to wind and temperature profiles near the ground (Businger-Dyer forms) [U] |
 | Repo 1 | The older LBM repo (`mw483/lbm-cuda-project`) whose runs (flat_3072, cube_3072, 16m approach, short roughness) the scripts in `scripts/repo1_runs/` read |
 | `REPO_ROOT` | Repository root folder, from `data_loaders.local_paths`; scripts build output paths from it so they do not depend on the working directory |
+| Cut-out | A small box of the Jakarta map (cells `[i0, i1, j0, j1]`, end exclusive) chosen for a simulation |
+| Candidate | A saved cut-out box in `candidates.yaml` (`name`, `box`, `nz`, `note`) |
+| AIJ checks | Domain rules from the AIJ CFD guideline (Tominaga et al. 2008): top at least 5 H, blockage below 3 %, at least 10 H downstream (COST: 15 H_max), at least 10 cells per building side |
+| Seam | Where one edge of a periodic box meets the opposite edge; building cells or a ground step there disturb the flow |
 
 ## Inspecting the changes
 
