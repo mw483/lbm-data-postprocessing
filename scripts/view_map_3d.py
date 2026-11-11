@@ -13,6 +13,8 @@ Coordinates stay global (metres from the map origin) when cropping.
     python scripts/view_map_3d.py FOLDER --crop 4300 4900 1000 1500 --stride 1    # any map folder, cells i0 i1 j0 j1
     python scripts/view_map_3d.py FOLDER --sources path/to/particle_position.txt
     python scripts/view_map_3d.py --case NAME --save view.png                     # PNG, no window
+    python scripts/view_map_3d.py FOLDER --box A --candidates candidates.yaml     # crop = candidate box A
+                                                                                  #   (from explore_tiles.py)
 
 Keys in the window: 'p' over a point prints x, y, cell i, j and the ground,
 building and tree heights at that cell; 's' saves a numbered screenshot to
@@ -61,6 +63,17 @@ def resolve_inputs(folder, case, sources):
     return map_dir, label, sources
 
 
+def candidate_box(path, name):
+    """[i0, i1, j0, j1] of the candidate called `name` in a candidates YAML."""
+    import yaml
+    with open(path, "r", encoding="utf-8") as f:
+        cands = (yaml.safe_load(f) or {}).get("candidates", [])
+    for c in cands:
+        if str(c["name"]) == name:
+            return [int(v) for v in c["box"]]
+    raise SystemExit(f"[ERROR] no candidate {name!r} in {path} (have: {', '.join(str(c['name']) for c in cands)})")
+
+
 def figures_dir():
     try:
         return load_local_paths()["figures"] / "map_3d"
@@ -97,6 +110,8 @@ def main():
     ap.add_argument("--case", help="LBM-city case name; reads <lbm_cases>/<case>/map")
     ap.add_argument("--crop", type=int, nargs=4, metavar=("I0", "I1", "J0", "J1"),
                     help="cell window, end exclusive")
+    ap.add_argument("--box", help="name of a candidate box in --candidates (instead of --crop)")
+    ap.add_argument("--candidates", help="candidates YAML from scripts/jakarta-map-analysis/explore_tiles.py")
     ap.add_argument("--stride", type=int, default=0, help="coarsen by N x N cells (default: auto)")
     ap.add_argument("--zscale", type=float, default=1.0, help="vertical exaggeration")
     ap.add_argument("--sources", nargs="?", const=True,
@@ -109,6 +124,10 @@ def main():
 
     if bool(args.folder) == bool(args.case):
         ap.error("give either a map folder or --case, not both")
+    if args.box:
+        if args.crop or not args.candidates:
+            ap.error("--box needs --candidates and replaces --crop")
+        args.crop = candidate_box(args.candidates, args.box)
     folder, label, sources = resolve_inputs(args.folder, args.case, args.sources)
     full = load_map_set(folder)
     describe(full, f"Map {label}")

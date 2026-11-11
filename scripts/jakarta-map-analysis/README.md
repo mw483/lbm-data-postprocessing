@@ -24,6 +24,15 @@ python scripts/jakarta-map-analysis/compare_reference.py $M --georef <out>/geore
     --source-building "$D/dataset/w and wo height(6) AREA1 rasterized new new.tif"   # -> compare_summary.csv, figures
 ```
 
+Choosing a cut-out to simulate (interactive window, or `--save` for the figure to show the professor):
+
+```sh
+python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.yaml --nz 256          # window
+python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.yaml \
+    --candidates <out>/candidates.yaml --save <out>/candidates.png                                    # -> PNG + candidates.csv
+python scripts/view_map_3d.py $M --box A --candidates <out>/candidates.yaml                          # one box in 3D
+```
+
 `--land-columns 1279 7750` leaves out the south end of the Jakarta map, where the terrain ramps down from about 14.5 m to 0 over columns 7750-7939 and has no buildings (made for the boundary, not real terrain).
 
 | Script | Shows | Notes |
@@ -33,9 +42,10 @@ python scripts/jakarta-map-analysis/compare_reference.py $M --georef <out>/geore
 | `map_statistics.py` | Terrain percentiles; plan area fraction λp; building height statistics, most common height; H_av; frontal area index λf along x and y; buildings by height class, footprint and smallest width vs the 16-cell rule; tree cover; 500 m tiles; per-column transect | Land columns = domain without the flat 0 m strips at both ends (override with `--land-columns`) |
 | `plot_map_statistics.py` | terrain.png, built_along_x.png, building_heights.png, building_widths.png, tiles.png | Each figure's purpose, reference and units are in the script docstring |
 | `compare_reference.py` | Map against DEMNAS and the source terrain file (bias, RMSE, r, open vs building cells), against GHSL BUILT-S/H per 100 m pixel (built-up fraction, AGBH, ANBH, totals), and against the source building raster (height classes, 6 m rule) | Figures by `plot_compare_reference.py`; every input optional |
+| `explore_tiles.py` | Window: buildings from above + one 500 m tile statistic (keys 1-4); drag a box or click a tile to get its numbers; `a` saves it to `candidates.yaml`, `v` opens it in `view_map_3d.py`, `w` writes PNG + CSV. `--save`: candidates drawn on the maps + `candidates.csv` | Box numbers from `box_summary` (full 2 m map): λp, heights, 6 m share, trees, ground range, building cells on each periodic edge, same-size street-aligned shift, buildings narrower than 10/16 cells, open-ground sources, and for `--nz`: top/H_max, length/H_max, blockage per cross-section (AIJ < 3%), width/top, cells and wall time [est]. Wind along +i |
 | `_common.py` | Shared argument handling | Not run directly |
 
-Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building labelling, tiles) and `data_loaders/map_georef.py` (georef.yaml, cell → CRS / lon-lat).
+Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building labelling, tiles, cut-out box numbers) and `data_loaders/map_georef.py` (georef.yaml, cell → CRS / lon-lat).
 
 ## Caveats
 
@@ -43,3 +53,5 @@ Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building label
 - λf uses the raster definition: the positive height steps met by the wind. Walls behind taller ones count only by the part that sticks out.
 - The location fit only tries shifts and 90° turns/mirrors at scale 1. The Jakarta georef.yaml was then snapped by hand to the map-making domain box `D:/LBM_Jakarta_2023/dataset/area1_west.gpkg` (under 1 m from the fit; key `snapped_to`).
 - GHSL heights are estimated from 30 m global DEMs; treat them as an independent estimate, not the truth.
+- Box blockage is the periodic stand-in for the AIJ blockage ratio (Tominaga et al. 2008, sec. 3.1): for each column, the share of the y-z cross-section (box width x domain top) filled by buildings. AIJ defines it for an inflow/outflow domain as the frontal projection of all buildings, which has no direct meaning when the city repeats.
+- Wall time scales the 512 x 128 x 1024 benchmark (0.068 s per step on 4 GPUs, dt 0.008 s) linearly with the cell count; GPU memory is not checked.
