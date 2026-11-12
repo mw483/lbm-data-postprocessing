@@ -1,0 +1,69 @@
+about: 'Candidate cut-out boxes: box = [i0, i1, j0, j1] in map cells, end exclusive;
+  nz = vertical cells (2 m); wind along +i (map x).'
+candidates:
+- name: A
+  box:
+  - 3279
+  - 3791
+  - 1250
+  - 1762
+  nz: 256
+  note: uniform low-rise, flat ground, cheapest; closest to the homogeneous city footprint
+    models assume
+- name: B
+  box:
+  - 4529
+  - 5041
+  - 750
+  - 1518
+  nz: 352
+  note: mixed mid-rise up to 88 m with trees; realistic heights, wider buildings pass
+    the 10-cell rule
+- name: C
+  box:
+  - 5700
+  - 6212
+  - 1700
+  - 2212
+  nz: 960
+  note: high-rise CBD (383 m tower); later, needs a ~1.9 km top and more GPUs
+- name: J1
+  box:
+  - 3343
+  - 3855
+  - 1792
+  - 1920
+  nz: 160
+  note: 'find_cutouts rank 1: volume_share_ge_16_cells 0.99, max 12 m, blockage 1.9%'
+- name: J2
+  box:
+  - 2319
+  - 2831
+  - 768
+  - 896
+  nz: 160
+  note: 'find_cutouts rank 2: volume_share_ge_16_cells 0.98, max 9 m, blockage 1.5%'
+- name: J3
+  box:
+  - 1999
+  - 2511
+  - 1920
+  - 2048
+  nz: 160
+  note: 'find_cutouts rank 3: volume_share_ge_16_cells 0.98, max 34 m, blockage 2.0%'
+- name: J4
+  box:
+  - 2591
+  - 3103
+  - 1808
+  - 1936
+  nz: 160
+  note: 'find_cutouts rank 4: volume_share_ge_16_cells 0.98, max 58 m, blockage 2.7%'
+- name: J5
+  box:
+  - 3199
+  - 3711
+  - 1328
+  - 1456
+  nz: 160
+  note: 'find_cutouts rank 5: volume_share_ge_16_cells 0.98, max 12 m, blockage 1.9%'
