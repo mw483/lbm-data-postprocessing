@@ -31,6 +31,8 @@ python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.ya
 python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.yaml \
     --candidates <out>/candidates.yaml --save <out>/candidates.png                                    # -> PNG + candidates.csv
 python scripts/view_map_3d.py $M --box A --candidates <out>/candidates.yaml                          # one box in 3D
+python scripts/jakarta-map-analysis/find_cutouts.py $M --land-columns 1279 7750 --size 512 128 --nz 160 \
+    --candidates <out>/candidates.yaml                                                                # best 512 x 128 boxes -> J1, J2, ...
 ```
 
 `--land-columns 1279 7750` leaves out the south end of the Jakarta map, where the terrain ramps down from about 14.5 m to 0 over columns 7750-7939 and has no buildings (made for the boundary, not real terrain).
@@ -43,6 +45,7 @@ python scripts/view_map_3d.py $M --box A --candidates <out>/candidates.yaml     
 | `plot_map_statistics.py` | terrain.png, built_along_x.png, building_heights.png, building_widths.png, tiles.png | Each figure's purpose, reference and units are in the script docstring |
 | `compare_reference.py` | Map against DEMNAS and the source terrain file (bias, RMSE, r, open vs building cells), against GHSL BUILT-S/H per 100 m pixel (built-up fraction, AGBH, ANBH, totals), and against the source building raster (height classes, 6 m rule) | Figures by `plot_compare_reference.py`; every input optional |
 | `explore_tiles.py` | Window: buildings from above + one 500 m tile statistic (keys 1-4); drag a box or click a tile to get its numbers; `a` saves it to `candidates.yaml`, `v` opens it in `view_map_3d.py`, `w` writes PNG + CSV. `--save`: candidates drawn on the maps + `candidates.csv` | Box numbers from `box_summary` (full 2 m map): λp, heights, 6 m share, trees, ground range, building cells on each periodic edge, same-size street-aligned shift, buildings narrower than 10/16 cells, open-ground sources, and for `--nz`: top/H_max, length/H_max, blockage per cross-section (AIJ < 3%), width/top, cells and wall time [est]. Wind along +i |
+| `find_cutouts.py` | Every box of `--size` cells on a `--stride` grid, tested against: top >= 5 H_max, length >= 10 H_max, blockage < 3% (AIJ), ground range <= 2 m, λp >= 0.2. Passing boxes ranked by building volume in buildings >= 16 cells wide, then by building cells on the edges; the best non-overlapping ones measured with `box_summary` and optionally added to `candidates.yaml` as J1, J2, ... | Building width is that of the whole building, also where the box cuts it. Outputs `find_cutouts_<ni>x<nj>.csv` and `_best.csv` |
 | `_common.py` | Shared argument handling | Not run directly |
 
 Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building labelling, tiles, cut-out box numbers) and `data_loaders/map_georef.py` (georef.yaml, cell → CRS / lon-lat).
@@ -55,3 +58,4 @@ Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building label
 - GHSL heights are estimated from 30 m global DEMs; treat them as an independent estimate, not the truth.
 - Box blockage is the periodic stand-in for the AIJ blockage ratio (Tominaga et al. 2008, sec. 3.1): for each column, the share of the y-z cross-section (box width x domain top) filled by buildings. AIJ defines it for an inflow/outflow domain as the frontal projection of all buildings, which has no direct meaning when the city repeats.
 - Wall time scales the 512 x 128 x 1024 benchmark (0.068 s per step on 4 GPUs, dt 0.008 s) linearly with the cell count; GPU memory is not checked.
+- λf before 2026-11-12 was too large by a factor dx (2 for the 2 m maps): `frontal_area_index` divided by the cell count but not by dx. The Jakarta `summary.csv` of 2026-10-28 (λf 0.306 / 0.294) should read 0.153 / 0.147; rerun `map_statistics.py`.

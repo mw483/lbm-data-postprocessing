@@ -71,6 +71,14 @@ python scripts/view_map_3d.py <map folder> --sources <particle_position.txt>    
 
 Consistency checks, location fit, terrain/building/tree statistics and figures for a map set: see [scripts/jakarta-map-analysis/README.md](scripts/jakarta-map-analysis/README.md).
 
+### Urban parameters of several maps (2026-11-12)
+
+```sh
+python scripts/compare_urban_parameters.py scripts/compare_urban_parameters_example.yaml   # -> urban_parameters.csv / .png
+```
+
+Compares idealised cube arrays (aligned or staggered, generated from their parameters), boxes of any map set (e.g. Jakarta candidates) and whole LBM-city cases: λp, λf, heights and their spread, building widths vs the 10/16-cell rules, street width and H/W, d and z0 (Macdonald et al. 1998; Kanda et al. 2013), and with `nz` the AIJ domain checks. The example config lists every option.
+
 ### Solver statistics, scalar2 and later (2026-10-16)
 
 Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at `<lbm_results>/<case>/<date>_<tag>/output` (wind CSV) and `.../particle_postprocess` (post-processed particles). Put the runs, written `<case>/<date>_<tag>` (e.g. `flat_512x128x1024/20261011_scalar2`), in `CASES` at the top of each script, then:
