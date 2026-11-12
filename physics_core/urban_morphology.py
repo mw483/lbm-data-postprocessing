@@ -62,18 +62,19 @@ def area_weighted_height(hb):
     return float(hb.mean())
 
 
-def frontal_area_index(hb, axis):
+def frontal_area_index(hb, axis, dx=1.0):
     """
     lambda_f for wind along +x (axis=1, along i) or +y (axis=0, along j):
-    sum of the positive height steps met by the wind, times the cell width,
-    over the total plan area. Walls in the lee of taller ones count only by the
-    part that sticks out (raster definition). Inflow edge walls count in full.
+    windward wall area / total plan area = sum of the positive height steps met
+    by the wind x dx / (cells x dx^2) = sum of steps / (cells x dx).
+    hb in m and dx in m per cell (dx = 1 when heights are in cells).
+    Walls in the lee of taller ones count only by the part that sticks out
+    (raster definition). Inflow edge walls count in full.
     """
     s = np.asarray(hb, dtype=float)
     pad = np.zeros((1, s.shape[1])) if axis == 0 else np.zeros((s.shape[0], 1))
     steps = np.diff(np.concatenate([pad, s], axis=axis), axis=axis)
-    # height x dx per wall, area dx^2 per cell: dx cancels
-    return float(np.clip(steps, 0, None).sum() / s.size)
+    return float(np.clip(steps, 0, None).sum() / (s.size * dx))
 
 
 def label_buildings(hb, connectivity=4):
@@ -202,7 +203,7 @@ def box_summary(maps, box, dx=2.0, nz=None, run_s=3600.0, source_step=8,
     out = {"i0": i0, "i1": i1, "j0": j0, "j1": j1, "n_i": n_i, "n_j": n_j,
            "length_x_m": n_i * dx, "width_y_m": n_j * dx,
            "lambda_p": plan_area_fraction(hb), "H_av_m": area_weighted_height(hb),
-           "lambda_f_x": frontal_area_index(hb, axis=1),
+           "lambda_f_x": frontal_area_index(hb, axis=1, dx=dx),
            "h_mean_m": float(hb[is_b].mean()) if is_b.any() else np.nan,
            "h_p50_m": float(np.median(hb[is_b])) if is_b.any() else np.nan,
            "h_max_m": h_max,

@@ -34,6 +34,13 @@ def test_plan_fraction_and_area_weighted_height():
     assert area_weighted_height(hb) == 10.0
 
 
+def test_frontal_area_heights_in_metres():
+    # 10 m high, 2 m cells: one wall 10 m x 2 m over 4 x 4 cells of 4 m2
+    hb = np.zeros((4, 4))
+    hb[1, 1] = 10.0
+    assert frontal_area_index(hb, axis=1, dx=2.0) == pytest.approx(10 * 2 / (16 * 4))
+
+
 def test_frontal_area_single_block():
     # one 2 x 1 cell block of height 10 in a 4 x 4 domain (dx cancels)
     hb = np.zeros((4, 4))
