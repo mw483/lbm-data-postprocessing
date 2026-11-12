@@ -69,8 +69,8 @@ def summary_rows(maps, hb, hv, table, land):
         add("h_b_mode", vals[counts.argmax()], "m", "most common building height (a default height for buildings without data?)")
         add("h_b_mode_share", counts.max() / counts.sum(), "share of building cells", "building cells at the most common height")
     add("H_av", area_weighted_height(b_), "m", "building volume / land area")
-    add("lambda_f_i", frontal_area_index(b_, axis=1), "-", "windward wall area / land area, wind along map x (i)")
-    add("lambda_f_j", frontal_area_index(b_, axis=0), "-", "windward wall area / land area, wind along map y (j)")
+    add("lambda_f_i", frontal_area_index(b_, axis=1, dx=DX), "-", "windward wall area / land area, wind along map x (i)")
+    add("lambda_f_j", frontal_area_index(b_, axis=0, dx=DX), "-", "windward wall area / land area, wind along map y (j)")
     for h in HEIGHT_CLASSES:
         add(f"buildings_taller_than_{h}m", int((table["h_max"] > h).sum()), "count", "buildings (4-connected groups) by max height")
     n = len(table["id"])
