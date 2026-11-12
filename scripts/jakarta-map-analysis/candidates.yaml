@@ -29,41 +29,41 @@ candidates:
   note: high-rise CBD (383 m tower); later, needs a ~1.9 km top and more GPUs
 - name: J1
   box:
+  - 2063
+  - 2575
+  - 1744
+  - 1872
+  nz: 320
+  note: 'find_cutouts rank 1: volume_share_ge_16_cells 0.99, max 59 m, blockage 2.6%'
+- name: J2
+  box:
   - 3343
   - 3855
   - 1792
   - 1920
-  nz: 160
-  note: 'find_cutouts rank 1: volume_share_ge_16_cells 0.99, max 12 m, blockage 1.9%'
-- name: J2
+  nz: 320
+  note: 'find_cutouts rank 2: volume_share_ge_16_cells 0.99, max 12 m, blockage 1.0%'
+- name: J3
   box:
   - 2319
   - 2831
   - 768
   - 896
-  nz: 160
-  note: 'find_cutouts rank 2: volume_share_ge_16_cells 0.98, max 9 m, blockage 1.5%'
-- name: J3
-  box:
-  - 1999
-  - 2511
-  - 1920
-  - 2048
-  nz: 160
-  note: 'find_cutouts rank 3: volume_share_ge_16_cells 0.98, max 34 m, blockage 2.0%'
+  nz: 320
+  note: 'find_cutouts rank 3: volume_share_ge_16_cells 0.98, max 9 m, blockage 0.7%'
 - name: J4
+  box:
+  - 2047
+  - 2559
+  - 1888
+  - 2016
+  nz: 320
+  note: 'find_cutouts rank 4: volume_share_ge_16_cells 0.98, max 34 m, blockage 1.8%'
+- name: J5
   box:
   - 2591
   - 3103
   - 1808
   - 1936
-  nz: 160
-  note: 'find_cutouts rank 4: volume_share_ge_16_cells 0.98, max 58 m, blockage 2.7%'
-- name: J5
-  box:
-  - 3199
-  - 3711
-  - 1328
-  - 1456
-  nz: 160
-  note: 'find_cutouts rank 5: volume_share_ge_16_cells 0.98, max 12 m, blockage 1.9%'
+  nz: 320
+  note: 'find_cutouts rank 5: volume_share_ge_16_cells 0.98, max 58 m, blockage 1.3%'
