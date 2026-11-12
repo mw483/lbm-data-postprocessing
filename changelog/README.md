@@ -27,6 +27,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-02 | [2026-11-02_flat2048-long-lab-pc-paths.md](2026-11-02_flat2048-long-lab-pc-paths.md) | Branch `analysis/scalar2-outputs`: `flat2048_long` goes back to the plain string form `flat_2048x128x704/20261030_scalar2_long` (long-run data moved to the lab PC `D:/lbm_results`; the `Z:` drive is on the laptop). `run_sets` loads and its test passes; not checked on the lab PC | `d6dd4d7` |
 | 2026-11-02 | [2026-11-02_xz-heatmaps-single-run.md](2026-11-02_xz-heatmaps-single-run.md) | Branch `analysis/scalar2-outputs`: `plot_xz_yav_heatmaps` writes `combined_step*.png`, `combined.gif` and `combined.mp4` only for sets with more than one run; per-case output and colour scale unchanged. Tested on a one-run set (512 convective wind output); two-run set not rechecked | `3ce8676` |
 | 2026-11-11 | [2026-11-11_tile-explorer.md](2026-11-11_tile-explorer.md) | Branch `analysis/scalar2-outputs`: `box_summary` (numbers for one cut-out box from the full 2 m map: lambda_p, heights, periodic seams, AIJ checks, source count, wall-time estimate) and `explore_tiles.py` window to pick and save candidate boxes; `view_map_3d.py --box`. Synthetic map and synthetic events only, not run on the real map or a real display | `5dd6a7a` `4553092` |
+| 2026-11-12 | [2026-11-12_urban-parameter-comparison.md](2026-11-12_urban-parameter-comparison.md) | Branch `analysis/scalar2-outputs`: **bug fix** `frontal_area_index` divided by dx too little (lambda_f was dx times too large; Jakarta 0.306 / 0.294 should be 0.153 / 0.147); cube arrays, street width, Macdonald 1998 and Kanda 2013 (coefficients [U]); `compare_urban_parameters.py` and `find_cutouts.py` for the 512 x 128 x 160 case. Synthetic maps only, not run on the real map | `1b7addf` `e68fef9` `345ecf1` |
 
 ## Glossary
 
@@ -78,6 +79,9 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Cut-out | A small box of the Jakarta map (cells `[i0, i1, j0, j1]`, end exclusive) chosen for a simulation |
 | Candidate | A saved cut-out box in `candidates.yaml` (`name`, `box`, `nz`, `note`) |
 | AIJ checks | Domain rules from the AIJ CFD guideline (Tominaga et al. 2008): top at least 5 H, blockage below 3 %, at least 10 H downstream (COST: 15 H_max), at least 10 cells per building side |
+| Cube array | Periodic array of square blocks (`cube_array`), aligned (grid) or staggered (every other row shifted half a pitch); pitch = block size + gap |
+| W, H/W | Mean open gap between buildings along the wind (street width) and mean building height over W |
+| d, z0 | Displacement height and roughness length of the urban canopy, from Macdonald et al. (1998) and Kanda et al. (2013) |
 | Seam | Where one edge of a periodic box meets the opposite edge; building cells or a ground step there disturb the flow |
 
 ## Inspecting the changes
