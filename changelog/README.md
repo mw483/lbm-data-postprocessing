@@ -28,6 +28,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-02 | [2026-11-02_xz-heatmaps-single-run.md](2026-11-02_xz-heatmaps-single-run.md) | Branch `analysis/scalar2-outputs`: `plot_xz_yav_heatmaps` writes `combined_step*.png`, `combined.gif` and `combined.mp4` only for sets with more than one run; per-case output and colour scale unchanged. Tested on a one-run set (512 convective wind output); two-run set not rechecked | `3ce8676` |
 | 2026-11-11 | [2026-11-11_tile-explorer.md](2026-11-11_tile-explorer.md) | Branch `analysis/scalar2-outputs`: `box_summary` (numbers for one cut-out box from the full 2 m map: lambda_p, heights, periodic seams, AIJ checks, source count, wall-time estimate) and `explore_tiles.py` window to pick and save candidate boxes; `view_map_3d.py --box`. Synthetic map and synthetic events only, not run on the real map or a real display | `5dd6a7a` `4553092` |
 | 2026-11-12 | [2026-11-12_urban-parameter-comparison.md](2026-11-12_urban-parameter-comparison.md) | Branch `analysis/scalar2-outputs`: **bug fix** `frontal_area_index` divided by dx too little (lambda_f was dx times too large; Jakarta 0.306 / 0.294 should be 0.153 / 0.147); cube arrays, street width, Macdonald 1998 and Kanda 2013 (coefficients [U]); `compare_urban_parameters.py` and `find_cutouts.py` for the 512 x 128 x 160 case. Synthetic maps only, not run on the real map | `1b7addf` `e68fef9` `345ecf1` |
+| 2026-11-12 | [2026-11-12_road-sources.md](2026-11-12_road-sources.md) | Branch `analysis/scalar2-outputs`: OSM roads (as of 2024-01-01) for the Jakarta map: `road_network` library, `fetch_osm_roads.py`, `rasterize_roads.py`, `place_road_sources.py` (sources every 16 m along centrelines, all classes and main roads, elevated roads left out). Synthetic tests only, not run on the real map | `7169840` `cd30156` |
 
 ## Glossary
 
@@ -83,6 +84,10 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | W, H/W | Mean open gap between buildings along the wind (street width) and mean building height over W |
 | d, z0 | Displacement height and roughness length of the urban canopy, from Macdonald et al. (1998) and Kanda et al. (2013) |
 | Seam | Where one edge of a periodic box meets the opposite edge; building cells or a ground step there disturb the flow |
+| Road class | 1 motorway/trunk, 2 primary/secondary, 3 tertiary/unclassified, 4 residential/living_street/service (from the OSM `highway` tag); +10 = elevated (11-14) |
+| Elevated road | Bridge, flyover or OSM `layer` > 0; left out of ground sources unless `--include-elevated` |
+| Overpass | The OSM query API; its `date` filter gives OSM as it was on a past date |
+| Centreline source | Particle source placed every 16 m along a road's centreline, z = ground + 1 m |
 
 ## Inspecting the changes
 

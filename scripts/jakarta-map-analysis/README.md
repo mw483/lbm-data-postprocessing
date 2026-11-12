@@ -35,6 +35,19 @@ python scripts/jakarta-map-analysis/find_cutouts.py $M --land-columns 1279 7750 
     --candidates <out>/candidates.yaml                                                                # best 512 x 128 boxes -> J1, J2, ...
 ```
 
+Roads and street sources (plan: `planning/jakarta_road_sources_plan_2026-11-12.md` in the project files). `fetch_osm_roads.py` needs the internet (lab PC); the other two run offline:
+
+```sh
+G=<out>/georef.yaml
+python scripts/jakarta-map-analysis/fetch_osm_roads.py --georef $G                                 # OSM roads as of 2024-01-01 -> <out>/roads/roads.gpkg
+python scripts/jakarta-map-analysis/rasterize_roads.py $M --georef $G --roads <out>/roads/roads.gpkg \
+    --land-columns 1279 7750 --candidates <out>/candidates.yaml                                    # -> road_class.npy, road.dat, summary, figures
+python scripts/jakarta-map-analysis/place_road_sources.py $M --georef $G --roads <out>/roads/roads.gpkg \
+    --land-columns 1279 7750 --name all --classes 1 2 3 4                                          # -> roads/sources_all/
+python scripts/jakarta-map-analysis/place_road_sources.py $M --georef $G --roads <out>/roads/roads.gpkg \
+    --land-columns 1279 7750 --name main --classes 1 2                                             # -> roads/sources_main/
+```
+
 `--land-columns 1279 7750` leaves out the south end of the Jakarta map, where the terrain ramps down from about 14.5 m to 0 over columns 7750-7939 and has no buildings (made for the boundary, not real terrain).
 
 | Script | Shows | Notes |
@@ -46,9 +59,12 @@ python scripts/jakarta-map-analysis/find_cutouts.py $M --land-columns 1279 7750 
 | `compare_reference.py` | Map against DEMNAS and the source terrain file (bias, RMSE, r, open vs building cells), against GHSL BUILT-S/H per 100 m pixel (built-up fraction, AGBH, ANBH, totals), and against the source building raster (height classes, 6 m rule) | Figures by `plot_compare_reference.py`; every input optional |
 | `explore_tiles.py` | Window: buildings from above + one 500 m tile statistic (keys 1-4); drag a box or click a tile to get its numbers; `a` saves it to `candidates.yaml`, `v` opens it in `view_map_3d.py`, `w` writes PNG + CSV. `--save`: candidates drawn on the maps + `candidates.csv` | Box numbers from `box_summary` (full 2 m map): λp, heights, 6 m share, trees, ground range, building cells on each periodic edge, same-size street-aligned shift, buildings narrower than 10/16 cells, open-ground sources, and for `--nz`: top/H_max, length/H_max, blockage per cross-section (AIJ < 3%), width/top, cells and wall time [est]. Wind along +i |
 | `find_cutouts.py` | Every box of `--size` cells on a `--stride` grid, tested against: top >= 5 H_max, length >= 10 H_max, blockage < 3% (AIJ), ground range <= 2 m, λp >= 0.2. Passing boxes ranked by building volume in buildings >= 16 cells wide, then by building cells on the edges; the best non-overlapping ones measured with `box_summary` and optionally added to `candidates.yaml` as J1, J2, ... | Building width is that of the whole building, also where the box cuts it. Outputs `find_cutouts_<ni>x<nj>.csv` and `_best.csv` |
+| `fetch_osm_roads.py` | OSM highway ways in the map box (Overpass API, `--date`, default 2024-01-01 = map snapshot), classified 1 motorway/trunk, 2 primary/secondary, 3 tertiary/unclassified, 4 residential/living_street/service, with width (tag, lanes x 3.5 m, or class default) and elevated/tunnel flags | Needs the internet; saves the raw answer, `--from-json` re-runs offline. Footways, paths, tracks are left out |
+| `rasterize_roads.py` | Roads burnt into the 2 m grid (`road_class.npy`, `road.dat`: 0 none, 1-4 class, 11-14 elevated); per class: length, area, share of land, share under buildings / trees; share of open land that is road; overlay and zoom figures | Default widths are assumed values [U]; `road.dat` is not read by the solver |
+| `place_road_sources.py` | Sources every `--step` m (16) along road centrelines of `--classes`, dropped inside buildings, trees, outside land columns or `--box`; z = ground + `--z-offset`; `road_sources.csv`, solver `particle_position/`, summary, figure | Elevated roads and tunnels left out unless `--include-elevated`; ID limit 214,748 checked; with a box, positions are relative to its corner |
 | `_common.py` | Shared argument handling | Not run directly |
 
-Library code: `physics_core/urban_morphology.py` (λp, λf, H_av, building labelling, tiles, cut-out box numbers) and `data_loaders/map_georef.py` (georef.yaml, cell → CRS / lon-lat).
+Library code: `physics_core/road_network.py` (road classes, widths, rasterising, centreline sources, solver source file), `physics_core/urban_morphology.py` (λp, λf, H_av, building labelling, tiles, cut-out box numbers) and `data_loaders/map_georef.py` (georef.yaml, cell → CRS / lon-lat).
 
 ## Caveats
 
