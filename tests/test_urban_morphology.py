@@ -195,3 +195,44 @@ def test_box_summary_street_box_moves_off_buildings():
 def test_box_summary_rejects_outside_box():
     with pytest.raises(ValueError):
         box_summary(maps_from(np.zeros((4, 4))), (0, 5, 0, 4))
+
+
+# --- cube arrays and morphometric roughness ---------------------------------------
+from physics_core.urban_morphology import (cube_array, kanda_2013, macdonald_1998,  # noqa: E402
+                                           mean_open_run, morphology_parameters)
+
+
+def test_aligned_cubes_known_numbers():
+    hb = cube_array(512, 128, 16, 32.0, 16, 16, "aligned")
+    p = morphology_parameters(hb, dx=2.0, arrangement="aligned")
+    assert p["lambda_p"] == pytest.approx(0.25)
+    assert p["lambda_f_x"] == pytest.approx(0.25)                     # 32 m x 32 m wall per 64 m x 64 m pitch
+    assert p["street_width_x_m"] == pytest.approx(32.0) and p["street_width_y_m"] == pytest.approx(32.0)
+    assert p["H_over_W_x"] == pytest.approx(1.0)
+    assert p["sigma_H_m"] == 0.0 and p["buildings"] == 16 * 4
+    assert p["narrower_16_cells_share"] == 0.0
+
+
+def test_staggered_cubes_shift_half_pitch_and_stay_periodic():
+    hb = cube_array(128, 64, 16, 1.0, 16, 16, "staggered")
+    assert mean_open_run(hb, 1) == pytest.approx(48)                 # next cube in line is 3 sides downstream
+    assert hb[0, 0] == 1 and hb[16, 32] == 1 and hb[0, 32] == 0       # second row shifted by 16 cells in j
+    assert (hb > 0).mean() == pytest.approx(0.25)
+    with pytest.raises(ValueError):
+        cube_array(96, 64, 16, 1.0, 16, 16, "staggered")            # 3 pitches along i: not periodic
+
+
+def test_mean_open_run():
+    hb = np.array([[1, 0, 0, 1, 0], [0, 0, 0, 0, 0]], float)
+    assert mean_open_run(hb, 1) == pytest.approx(1.5)                # gaps 2 and 1 (across the seam); empty row skipped
+    assert mean_open_run(hb, 1, periodic=False) == pytest.approx(2.0)
+
+
+def test_macdonald_and_kanda_limits():
+    d, z0 = macdonald_1998(0.25, 0.25, 10.0, "aligned")
+    assert 0 < d < 10 and 0 < z0 < 10 - d
+    assert macdonald_1998(0.0, 0.0, 10.0)[0] == pytest.approx(0.0)   # no buildings: d = 0
+    # uniform heights: sigma = 0, X = 1, d = H_max * a0 * lambda_p^b0; z0 = 0.71 z0_mac
+    d_k, z0_k = kanda_2013(0.25, 0.25, 10.0, 10.0, 0.0)
+    assert d_k == pytest.approx(10.0 * 1.29 * 0.25 ** 0.36)
+    assert z0_k == pytest.approx(0.71 * macdonald_1998(0.25, 0.25, 10.0, "staggered")[1])
