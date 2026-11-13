@@ -25,4 +25,4 @@ local_paths.yaml
 cache/
 
 # Archived figures
-figures/archive
+outputs/archive
