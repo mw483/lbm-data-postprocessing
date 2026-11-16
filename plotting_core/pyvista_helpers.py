@@ -12,10 +12,11 @@ import pyvista as pv
 from data_loaders.map_io import create_voxel_buildings
 
 
-def add_snapshot_key(plotter, save_path, key='s'):
+def add_snapshot_key(plotter, save_path, key='s', on_save=None):
     """
     Creates the output directory and binds `key` to save numbered screenshots
     of the current view as `{base}_{NN:02d}{ext}` (starting at 01).
+    on_save(path), if given, runs after each screenshot (e.g. to write a sidecar file).
     """
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     snap_counter = [1]
@@ -25,6 +26,8 @@ def add_snapshot_key(plotter, save_path, key='s'):
         unique_save_path = f"{base_name}_{snap_counter[0]:02d}{ext}"
         plotter.screenshot(unique_save_path)
         print(f"--> SNAP! Saved view {snap_counter[0]} to: {unique_save_path}")
+        if on_save is not None:
+            on_save(unique_save_path)
         snap_counter[0] += 1
 
     plotter.add_key_event(key, take_snap)

@@ -84,3 +84,57 @@ def test_create_voxel_buildings_keeps_old_interface():
     assert mesh.bounds[0] == pytest.approx(2.0) and mesh.bounds[1] == pytest.approx(4.0)
     assert mesh.bounds[5] == pytest.approx(16.0)
     assert create_voxel_buildings(np.zeros((2, 2)), 2, 2) is None
+
+
+# --- roads, map.yaml and view names (view_map_3d.py, 2026-11-16) ---------------------------------
+def test_codes_coarsen_keeps_biggest_road_and_ground_over_elevated():
+    from plotting_core.map_3d import crop_and_coarsen_codes
+    codes = np.array([[0, 4, 12, 0],
+                      [2, 0, 0, 3]], np.uint8)
+    np.testing.assert_array_equal(crop_and_coarsen_codes(codes, (0, 4, 0, 2), 2), [[2, 3]])
+    np.testing.assert_array_equal(crop_and_coarsen_codes(codes, (2, 4, 0, 1), 1), [[12, 0]])
+
+
+def test_road_layers_one_tile_per_cell_above_ground():
+    from plotting_core.map_3d import road_layers
+    codes = np.array([[1, 4, 4], [0, 11, 0]], np.uint8)
+    topo = np.full(codes.shape, 3.0)
+    layers = road_layers(codes, topo, dx=2.0, lift=0.2)
+    assert {k: m.n_cells for k, m in layers.items()} == {"motorway": 1, "local": 2, "elevated": 1}
+    assert layers["local"].bounds[4] == pytest.approx(3.2)
+
+
+def test_map_meta_paths_relative_to_map_folder(tmp_path):
+    from data_loaders.map_meta import load_map_meta, map_label
+    d = tmp_path / "TSUBAME4_12m" / "map"
+    d.mkdir(parents=True)
+    assert load_map_meta(d) == {} and map_label(d) == "TSUBAME4_12m"
+    (d / "map.yaml").write_text("name: Jakarta12\nroads: ../roads/road_class.npy\n")
+    meta = load_map_meta(d)
+    assert map_label(d, meta) == "Jakarta12"
+    assert meta["roads"] == d / "../roads/road_class.npy"
+
+
+def test_box_location_corners_are_cell_edges():
+    pytest.importorskip("pyproj")
+    from data_loaders.map_georef import box_location
+    geo = {"crs": "EPSG:23834", "cell_size": 2.0, "orientation": "i:S,j:W", "nx": 8000, "ny": 2560,
+           "e_topleft": 234370.0, "n_topleft": 826440.0}
+    loc = box_location((0, 8000, 0, 2560), geo)
+    # i:S, j:W -> cell (0, 0) is the north-east corner of the map
+    assert loc["corners_crs"]["i0_j0"] == [234370.0 + 2560 * 2.0, 826440.0]
+    assert loc["corners_crs"]["i1_j1"] == [234370.0, 826440.0 - 8000 * 2.0]
+    assert (loc["x_points"], loc["y_points"]) == ("south", "west")
+    assert loc["size_m"] == [16000.0, 5120.0]
+
+
+def test_view_names():
+    import importlib.util
+    from pathlib import Path
+    spec = importlib.util.spec_from_file_location(
+        "view_map_3d", Path(__file__).resolve().parents[1] / "scripts" / "view_map_3d.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.view_name("TSUBAME4_12m", "J1", [1, 2, 3, 4], (10, 10)) == "TSUBAME4_12m_J1"
+    assert mod.view_name("M", None, [1, 5, 2, 8], (10, 10)) == "M_crop_1-5_2-8"
+    assert mod.view_name("M", None, None, (10, 10)) == "M"

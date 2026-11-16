@@ -111,3 +111,41 @@ def warp_to_map(path, geo, resampling="bilinear", src_crs=None, band=1, use_noda
                   dst_transform=image_transform(geo), dst_crs=geo["crs"], dst_nodata=np.nan,
                   resampling=getattr(Resampling, resampling))
     return out
+
+
+AXIS_WORDS = {"N": "north", "S": "south", "E": "east", "W": "west"}
+
+
+def box_location(box, geo):
+    """
+    Where a cell box [i0, i1, j0, j1] (end exclusive) lies: cell edges in map metres,
+    corners in geo['crs'] and lon/lat, its centre, and which real direction map x and y
+    point to. Plain floats and lists, ready for YAML. Needs pyproj for lon/lat.
+    """
+    from pyproj import Transformer
+    i0, i1, j0, j1 = (int(v) for v in box)
+    d = geo["cell_size"]
+    # cell_to_crs gives the centre of (fractional) cell i, so the edge at i is cell i - 0.5
+    corners = {"i0_j0": (i0, j0), "i1_j0": (i1, j0), "i0_j1": (i0, j1), "i1_j1": (i1, j1)}
+    to_ll = Transformer.from_crs(geo["crs"], "EPSG:4326", always_xy=True)
+    crs_c, ll_c = {}, {}
+    for k, (i, j) in corners.items():
+        e, n = cell_to_crs(i - 0.5, j - 0.5, geo)
+        lon, lat = to_ll.transform(float(e), float(n))
+        crs_c[k] = [round(float(e), 2), round(float(n), 2)]
+        ll_c[k] = [round(lon, 6), round(lat, 6)]
+    ec, nc = cell_to_crs((i0 + i1) / 2 - 0.5, (j0 + j1) / 2 - 0.5, geo)
+    lonc, latc = to_ll.transform(float(ec), float(nc))
+    i_dir, j_dir = (p.split(":")[1] for p in geo["orientation"].split(","))
+    return {
+        "box_cells": [i0, i1, j0, j1],
+        "box_m": [i0 * d, i1 * d, j0 * d, j1 * d],
+        "size_m": [(i1 - i0) * d, (j1 - j0) * d],
+        "crs": geo["crs"],
+        "corners_crs": crs_c,
+        "corners_lonlat": ll_c,
+        "centre_crs": [round(float(ec), 2), round(float(nc), 2)],
+        "centre_lonlat": [round(lonc, 6), round(latc, 6)],
+        "x_points": AXIS_WORDS[i_dir],
+        "y_points": AXIS_WORDS[j_dir],
+    }
