@@ -31,6 +31,8 @@ python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.ya
 python scripts/jakarta-map-analysis/explore_tiles.py $M --georef <out>/georef.yaml \
     --candidates <out>/candidates.yaml --save <out>/candidates.png                                    # -> PNG + candidates.csv
 python scripts/view_map_3d.py $M --box A --candidates <out>/candidates.yaml                          # one box in 3D
+python scripts/view_map_3d.py $M --box J1 --save          # with $M/map.yaml (name, georef, roads, candidates): roads by class,
+                                                           #   name + cut-out lon/lat on the image, <name>.yaml next to the PNG
 python scripts/jakarta-map-analysis/find_cutouts.py $M --land-columns 1279 7750 --size 512 128 --nz 160 \
     --candidates <out>/candidates.yaml                                                                # best 512 x 128 boxes -> J1, J2, ...
 ```
