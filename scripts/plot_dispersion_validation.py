@@ -7,16 +7,26 @@ Needs reduced.npz from scripts/reduce_particle_bins.py with the "plume" histogra
 and the run's wind output (prof*.csv) for z_i, w* and U.
 
 Figures, each with: what it measures / why / reference / units and sample.
-1. dispersion_vertical_<run>.png (left: contour, right: Z mean and sigma_z against X)
+1. dispersion_vertical_<run>.png
+   Left: contour of C_y U z_i / Q with the model's height of the concentration MAXIMUM (red) and Stull's
+   centreline formula (orange). Right: model MEAN height and sigma_z with the Willis & Deardorff (1976)
+   Fig. 2 mean heights. Each reference is compared with the quantity it describes: Stull eq. 19.32 is the
+   height of the maximum, W&D Fig. 2 is the mean particle height (its eq. 8).
    What: how the particles spread in height as they age, in units of the CBL depth.
    Why: validation against the water-tank experiments, which first showed that near-ground releases in a
        CBL lift off and overshoot mid-layer before they mix (not Gaussian); a model with realistic
        updrafts / downdrafts must reproduce the lift-off, the timing and the well-mixed end state.
-   Reference: Willis & Deardorff 1976 (Q. J. R. Meteorol. Soc. 102, doi:10.1002/qj.49710243212) as summarised
-       in Stull, Practical Meteorology Sec. 19.7: centreline formula (eq. 19.32) and the well-mixed limits
-       Z mean -> 0.5, sigma_z -> 0.29. The tank source was higher (z_s/z_i ~ 0.07 [U]) than ours (0.1 m).
+   Reference: Willis & Deardorff 1976 (Q. J. R. Meteorol. Soc. 102, 427-445, doi:10.1002/qj.49710243212),
+       Fig. 2 digitised in validation_data/willis_deardorff_1976/ (two tank cases, l/z_i = 1.9 and 4.0 =
+       sidewall spacing / z_i, and Deardorff's 1972 numerical model); Stull, Practical Meteorology Sec. 19.7,
+       eq. 19.32 for the maximum; well-mixed limits Z mean -> 0.5, sigma_z -> 0.29. Differences to keep in
+       mind: the tank releases an instantaneous line source at z_r/z_i = 0.050-0.067 (numerical 0.1) and
+       turns time into distance with x = U t (no shear); ours is a continuous release at 0.1 m
+       (~0.0003 z_i) in a sheared mean wind, so our lift-off is expected later.
    Units: X = t w*/z_i (age), Z = z/z_i; colour = C_y U z_i / Q = z_i p(z | age). Upstream sources only.
-2. dispersion_distance_<run>.png: the same from the steady plume against distance, X = x w*/(U_ml z_i).
+       The maximum is taken after a running mean over PEAK_SMOOTH_BINS Z bins.
+2. dispersion_distance_<run>.png: the same (incl. both references) from the steady plume against distance,
+   X = x w*/(U_ml z_i).
    Why: the experiments define X from distance; with a mean wind that changes with height, distance and
        age give different X, and this figure shows by how much (compare with figure 1).
    Units: colour = C_y U_ml z_i / Q, U_ml = mean wind over 0.1-1 z_i.
@@ -75,9 +85,10 @@ from data_loaders.lbm_output import domain_profile, list_steps, load_prof, read_
 from data_loaders.local_paths import REPO_ROOT, load_local_paths, particle_reduced_dir, wind_dir
 from data_loaders.prairie_grass import crosswind_integrated, read_arcs, read_corrections, read_profiles, read_zi
 from data_loaders.run_sets import parse_set_args, set_output_dir, write_manifest
+from data_loaders.willis_deardorff import read_wd1976_mean_height
 from physics_core.cbl_dispersion import (
     WELL_MIXED_SIGMA_Z, WELL_MIXED_Z_MEAN, fraction_above, lagrangian_cy, lagrangian_cy_per_age,
-    profile_moments_of_density, scales_per_age, stull_centreline,
+    peak_height_of_density, profile_moments_of_density, scales_per_age, stull_centreline,
 )
 from physics_core.moments import cbl_scales, profile_moments
 from physics_core.particle_bin_stats import (
@@ -102,6 +113,13 @@ Z_GRID_STEP = 0.01      # Z bin of the per-age scaled figure 1 [z / z_i]
 NEAR_WALL_TOP = 40.0    # top of the near-wall figure [m]
 NEAR_WALL_AGES = (20, 60, 120, 300, 600)        # ages shown in the near-wall figure [s]
 NEAR_WALL_DISTANCES = (100, 300, 1000, 2000)    # distances shown in the near-wall figure [m]
+PEAK_SMOOTH_BINS = 3    # running mean over this many Z bins before taking the concentration maximum
+WD1976_STYLE = {        # Willis & Deardorff (1976) Fig. 2 curves on the right panel of figures 1 and 2
+    "tank_l_zi_1.9": {"color": "0.25", "linestyle": "none", "marker": "^", "label": "W&D 1976 tank, l/z_i 1.9"},
+    "tank_l_zi_4.0": {"color": "0.25", "linestyle": "none", "marker": "o", "label": "W&D 1976 tank, l/z_i 4.0"},
+    "numerical_deardorff_1972": {"color": "0.25", "linestyle": "--", "marker": None,
+                                 "label": "Deardorff 1972 numerical (in W&D 1976)"},
+}
 
 
 def run_scales(run_dir, t_first, t_last):
@@ -156,28 +174,36 @@ def mark_exit(ax, x_exit):
 
 
 def plot_vertical(X, Z, density, zs, title, cbar_label, save, x_exit=None):
-    """Contour of the scaled concentration with the centreline formula, and Z mean / sigma_z against X."""
-    fig, (a0, a1) = plt.subplots(1, 2, figsize=(13, 4.8))
+    """Left: contour of the scaled concentration with the model's concentration-maximum height against
+    Stull's centreline formula (both = height of the maximum). Right: model mean height and sigma_z
+    against the Willis & Deardorff (1976) Fig. 2 mean heights (like with like)."""
+    fig, (a0, a1) = plt.subplots(1, 2, figsize=(15, 4.8))
     keep = X <= X_MAX
     mesh = a0.pcolormesh(X[keep], Z, density[keep].T, shading="nearest", cmap="viridis",
                          vmin=0, vmax=np.nanpercentile(density[keep], 99))
     fig.colorbar(mesh, ax=a0, label=cbar_label)
     xr = np.linspace(0, X_MAX, 200)
-    a0.plot(xr, stull_centreline(xr, zs), "--", color="orange", label=f"Stull eq. 19.32, $z_s/z_i$ = {zs:.4f}")
-    mean, sd = profile_moments_of_density(Z, density)
-    a0.plot(X[keep], mean[keep], "r-", linewidth=1, label="model mean height")
+    a0.plot(xr, stull_centreline(xr, zs), "--", color="orange",
+            label=f"Stull eq. 19.32 (height of max.), $z_s/z_i$ = {zs:.4f}")
+    peak = peak_height_of_density(Z, density, smooth=PEAK_SMOOTH_BINS)
+    a0.plot(X[keep], peak[keep], "r-", linewidth=1, label="model height of max. concentration")
     if x_exit is not None and np.isfinite(x_exit):
         a0.axvline(x_exit, color="w", linestyle="-.", linewidth=1, label=f"first exit, X = {x_exit:.2f}")
     a0.set(xlabel="X", ylabel="$z / z_i$", ylim=(0, Z_MAX), xlim=(0, X_MAX))
     a0.legend(fontsize=7, loc="upper right")
-    a1.plot(X[keep], mean[keep], label=r"$\bar z / z_i$")
-    a1.plot(X[keep], sd[keep], label=r"$\sigma_z / z_i$")
+    mean, sd = profile_moments_of_density(Z, density)
+    a1.plot(X[keep], mean[keep], color="C0", linewidth=2, label=r"model $\bar z / z_i$")
+    a1.plot(X[keep], sd[keep], color="C1", linewidth=2, label=r"model $\sigma_z / z_i$")
+    for name, ref in read_wd1976_mean_height().items():
+        style = WD1976_STYLE.get(name, {"color": "k", "linestyle": "-", "marker": None, "label": name})
+        a1.plot(ref["X"], ref["z_mean"], color=style["color"], linestyle=style["linestyle"],
+                marker=style["marker"], markersize=4, linewidth=1, label=style["label"])
     a1.axhline(WELL_MIXED_Z_MEAN, color="C0", linestyle=":", label="well mixed, 0.5")
     a1.axhline(WELL_MIXED_SIGMA_Z, color="C1", linestyle=":", label="well mixed, 0.29")
     mark_exit(a1, x_exit)
     a1.set(xlabel="X", ylabel="/ $z_i$", xlim=(0, X_MAX), ylim=(0, 0.8))
     a1.grid(True, linestyle=":", alpha=0.5)
-    a1.legend(fontsize=8)
+    a1.legend(fontsize=7, loc="upper left", bbox_to_anchor=(1.01, 1.0))
     fig.suptitle(title)
     fig.tight_layout()
     fig.savefig(save, dpi=200, bbox_inches="tight")

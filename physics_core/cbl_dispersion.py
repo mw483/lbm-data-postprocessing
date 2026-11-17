@@ -46,6 +46,23 @@ def profile_moments_of_density(Z, density):
     return np.where(total > 0, mean, np.nan), np.sqrt(np.clip(np.where(total > 0, var, np.nan), 0, None))
 
 
+def peak_height_of_density(Z, density, smooth=3):
+    """Height / z_i of the concentration maximum of each row of a density on Z (the plume "centreline").
+
+    Each row is first smoothed in Z with a running mean over `smooth` bins (odd, 1 = none) so single noisy
+    bins do not win. Rows without particles give NaN. This is the quantity Stull's eq. 19.32 describes;
+    the mean height (profile_moments_of_density) is the one in Willis & Deardorff (1976) Fig. 2.
+    """
+    Z = np.asarray(Z, dtype=float)
+    d = np.asarray(density, dtype=float)
+    if smooth > 1:
+        k = np.ones(int(smooth)) / int(smooth)
+        d = np.apply_along_axis(lambda r: np.convolve(np.nan_to_num(r), k, mode="same"), 1, d)
+    valid = np.isfinite(np.asarray(density, dtype=float)).any(axis=1) & (np.nan_to_num(d).max(axis=1) > 0)
+    peak = Z[np.argmax(np.nan_to_num(d), axis=1)]
+    return np.where(valid, peak, np.nan)
+
+
 def lagrangian_cy_per_age(hist_z, z_edges, age_s, zi_age, wstar_age, Z_edges):
     """As lagrangian_cy, but each age is scaled by its own z_i and w* (arrays over the ages).
 
