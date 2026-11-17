@@ -1,12 +1,9 @@
 set: flat2048_long
 runs:
-  convective_long:
-    output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
-    particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess
-    particle_reduced: Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced
+  convective_long: flat_2048x128x704/20261030_scalar2_long
 inputs:
-  convective_long: '{''particle_reduced'': WindowsPath(''Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced''),
-    ''output'': WindowsPath(''Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2'')}'
+  convective_long: '{''particle_reduced'': WindowsPath(''D:/lbm_results/flat_2048x128x704/20261030_scalar2_long/particle_reduced''),
+    ''output'': WindowsPath(''D:/lbm_results/flat_2048x128x704/20261030_scalar2_long/output'')}'
 script: plot_dispersion_validation.py
-written: '2026-11-01T13:41:17'
-repo_commit: bc6e8ff+dirty
+written: '2026-11-17T16:51:55'
+repo_commit: bf9314f+dirty
