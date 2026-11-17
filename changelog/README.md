@@ -30,6 +30,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-12 | [2026-11-12_urban-parameter-comparison.md](2026-11-12_urban-parameter-comparison.md) | Branch `analysis/scalar2-outputs`: **bug fix** `frontal_area_index` divided by dx too little (lambda_f was dx times too large; Jakarta 0.306 / 0.294 should be 0.153 / 0.147); cube arrays, street width, Macdonald 1998 and Kanda 2013 (coefficients [U]); `compare_urban_parameters.py` and `find_cutouts.py` for the 512 x 128 x 160 case. Synthetic maps only, not run on the real map | `1b7addf` `e68fef9` `345ecf1` |
 | 2026-11-12 | [2026-11-12_road-sources.md](2026-11-12_road-sources.md) | Branch `analysis/scalar2-outputs`: OSM roads (as of 2024-01-01) for the Jakarta map: `road_network` library, `fetch_osm_roads.py`, `rasterize_roads.py`, `place_road_sources.py` (sources every 16 m along centrelines, all classes and main roads, elevated roads left out). Synthetic tests only, not run on the real map | `7169840` `cd30156` |
 | 2026-11-16 | [2026-11-16_map-viewer-roads.md](2026-11-16_map-viewer-roads.md) | Branch `analysis/scalar2-outputs`: `view_map_3d.py` shows the Jakarta roads by class, names saved images after the map and box and writes the cut-out coordinates (image text and `<png>.yaml`); optional `map.yaml` next to the `.dat` files (first piece of the map library). Synthetic map only, not run on the real map or interactively | `c3482a6` `1d42e78` |
+| 2026-11-17 | [2026-11-17_plume-height-references.md](2026-11-17_plume-height-references.md) | Branch `analysis/scalar2-outputs`: dispersion figures compare like with like: model height of the concentration maximum against Stull eq. 19.32 (left), model mean height and sigma_z against digitised Willis & Deardorff 1976 Fig. 2 (right); `peak_height_of_density`, W&D reader and data file. Unit tests and synthetic layout only, not run on real data | `6cb5226` |
 
 ## Glossary
 
@@ -89,6 +90,9 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Elevated road | Bridge, flyover or OSM `layer` > 0; left out of ground sources unless `--include-elevated` |
 | Overpass | The OSM query API; its `date` filter gives OSM as it was on a past date |
 | Centreline source | Particle source placed every 16 m along a road's centreline, z = ground + 1 m |
+| Height of maximum | Height / z_i where the concentration of a row is largest (after a 3-bin running mean); what Stull eq. 19.32 gives. Not the mean height |
+| Mean particle height | Concentration-weighted mean z / z_i; what W&D 1976 Fig. 2 shows |
+| l/z_i | Horizontal distance between the tank sidewalls over z_i in W&D 1976 (cases 1.9 and 4.0) |
 
 ## Inspecting the changes
 
