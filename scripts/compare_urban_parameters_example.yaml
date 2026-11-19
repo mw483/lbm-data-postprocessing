@@ -1,0 +1,28 @@
+# Example for scripts/compare_urban_parameters.py: the 16-cell cube arrays of the
+# small neutral case (512 x 128 x 160 cells) against Jakarta cut-outs.
+# Map paths are for the lab PC; relative paths are taken from this file's folder.
+dx: 2.0
+arrangement: staggered          # Macdonald coefficients for the real maps
+entries:
+  - name: cubes aligned
+    type: cubes
+    arrangement: aligned
+    domain_cells: [512, 128]
+    size_cells: 16
+    height_cells: 16
+    gap_cells: [16, 16]
+    nz: 160
+  - name: cubes staggered
+    type: cubes
+    arrangement: staggered
+    domain_cells: [512, 128]
+    size_cells: 16
+    height_cells: 16
+    gap_cells: [16, 16]
+    nz: 160
+  - name: Jakarta J1
+    type: map
+    folder: F:/TSUBAME4_12m/map
+    candidates: D:/figures/jakarta_map_analysis/TSUBAME4_12m/candidates.yaml   # adjust to your <figures>
+    box_name: J1                # written by find_cutouts.py --candidates
+    nz: 160

@@ -1,0 +1,93 @@
+# Willis & Deardorff (1976), Q. J. R. Meteorol. Soc. 102, 427-445, Fig. 2:
+# dimensionless mean particle height Z_p = z_mean / z_i against X = (x / z_i)(w* / U) (= t w*/z_i, eq. 2).
+# Digitised by Mikael with WebPlotDigitizer (2026-11-17) from the paper PDF; accuracy about +-0.01 in X and Z_p.
+# Rows sorted by X within each series; points at X slightly below 0 are digitising noise at the axis.
+# series:
+#   tank_l_zi_1.9 = case 2 (z_i 59.9 cm, w* 1.22 cm/s, release z_r/z_i 0.050, 5 experiments)
+#   tank_l_zi_4.0 = case 1 (z_i 28.7 cm, w* 0.98 cm/s, release z_r/z_i 0.067, 7 experiments)
+#   l/z_i = horizontal length between the tank sidewalls / z_i (paper Sec. 2, Table 1)
+#   numerical_deardorff_1972 = Deardorff (1972) numerical model, l/z_i 4, release z_r/z_i 0.1 (paper p. 431)
+# The tank results are stated valid for 0.13 < X < 3.0 (paper eq. 7).
+series,X,z_mean
+tank_l_zi_1.9,-0.0102,0.0513
+tank_l_zi_1.9,0.1077,0.0795
+tank_l_zi_1.9,0.1323,0.0920
+tank_l_zi_1.9,0.1863,0.1154
+tank_l_zi_1.9,0.2697,0.1544
+tank_l_zi_1.9,0.3284,0.2090
+tank_l_zi_1.9,0.3969,0.2557
+tank_l_zi_1.9,0.4557,0.3009
+tank_l_zi_1.9,0.5390,0.3555
+tank_l_zi_1.9,0.6025,0.4163
+tank_l_zi_1.9,0.6564,0.4552
+tank_l_zi_1.9,0.7299,0.4974
+tank_l_zi_1.9,0.8183,0.5333
+tank_l_zi_1.9,0.8968,0.5770
+tank_l_zi_1.9,1.0492,0.6115
+tank_l_zi_1.9,1.2068,0.6118
+tank_l_zi_1.9,1.3595,0.6137
+tank_l_zi_1.9,1.5271,0.6063
+tank_l_zi_4.0,-0.0055,0.0699
+tank_l_zi_4.0,0.0880,0.0841
+tank_l_zi_4.0,0.1766,0.0936
+tank_l_zi_4.0,0.2503,0.1202
+tank_l_zi_4.0,0.3140,0.1530
+tank_l_zi_4.0,0.3877,0.1873
+tank_l_zi_4.0,0.4465,0.2232
+tank_l_zi_4.0,0.5103,0.2513
+tank_l_zi_4.0,0.5839,0.2826
+tank_l_zi_4.0,0.6378,0.3184
+tank_l_zi_4.0,0.6966,0.3512
+tank_l_zi_4.0,0.7702,0.3949
+tank_l_zi_4.0,0.8290,0.4276
+tank_l_zi_4.0,0.9027,0.4511
+tank_l_zi_4.0,0.9616,0.4776
+tank_l_zi_4.0,1.0205,0.5042
+tank_l_zi_4.0,1.0844,0.5199
+tank_l_zi_4.0,1.2762,0.5638
+tank_l_zi_4.0,1.6110,0.5831
+tank_l_zi_4.0,1.9461,0.5714
+tank_l_zi_4.0,2.3108,0.5473
+tank_l_zi_4.0,2.7248,0.5279
+tank_l_zi_4.0,3.0549,0.5131
+numerical_deardorff_1972,-0.0107,0.1010
+numerical_deardorff_1972,0.1026,0.1075
+numerical_deardorff_1972,0.1813,0.1247
+numerical_deardorff_1972,0.2501,0.1451
+numerical_deardorff_1972,0.3238,0.1701
+numerical_deardorff_1972,0.4073,0.1967
+numerical_deardorff_1972,0.5203,0.2311
+numerical_deardorff_1972,0.5842,0.2530
+numerical_deardorff_1972,0.6530,0.2703
+numerical_deardorff_1972,0.7119,0.2937
+numerical_deardorff_1972,0.7659,0.3156
+numerical_deardorff_1972,0.8249,0.3359
+numerical_deardorff_1972,0.8690,0.3562
+numerical_deardorff_1972,0.9279,0.3812
+numerical_deardorff_1972,0.9869,0.4031
+numerical_deardorff_1972,1.0507,0.4281
+numerical_deardorff_1972,1.1145,0.4531
+numerical_deardorff_1972,1.1833,0.4797
+numerical_deardorff_1972,1.2373,0.5031
+numerical_deardorff_1972,1.3209,0.5172
+numerical_deardorff_1972,1.3799,0.5314
+numerical_deardorff_1972,1.4537,0.5455
+numerical_deardorff_1972,1.5226,0.5550
+numerical_deardorff_1972,1.5865,0.5675
+numerical_deardorff_1972,1.6603,0.5770
+numerical_deardorff_1972,1.7391,0.5850
+numerical_deardorff_1972,1.8178,0.5913
+numerical_deardorff_1972,1.9114,0.5946
+numerical_deardorff_1972,2.0296,0.5964
+numerical_deardorff_1972,2.1183,0.5966
+numerical_deardorff_1972,2.2119,0.5953
+numerical_deardorff_1972,2.3055,0.5908
+numerical_deardorff_1972,2.4041,0.5894
+numerical_deardorff_1972,2.4879,0.5803
+numerical_deardorff_1972,2.5815,0.5758
+numerical_deardorff_1972,2.6850,0.5698
+numerical_deardorff_1972,2.7787,0.5607
+numerical_deardorff_1972,2.8625,0.5531
+numerical_deardorff_1972,2.9414,0.5455
+numerical_deardorff_1972,3.0301,0.5379
+numerical_deardorff_1972,3.1089,0.5349

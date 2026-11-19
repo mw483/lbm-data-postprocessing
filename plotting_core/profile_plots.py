@@ -71,10 +71,13 @@ def plot_profile_panels(profiles, quantities, save_path, title="", zmax=None, co
     plot_profile_grid(profiles, [quantities], save_path, title=title, zmax=zmax, colors=colors, styles=styles)
 
 
-def plot_profile_grid(profiles, rows, save_path, title="", zmax=None, colors=None, styles=None):
+def plot_profile_grid(profiles, rows, save_path, title="", zmax=None, colors=None, styles=None,
+                      ylabel="z [m]", references=None):
     """
     Like plot_profile_panels, with the panels in rows: rows = [[(column, label), ...], ...].
     A None entry leaves that panel empty (hidden), so rows of different length line up.
+    ylabel: label of the height axis (e.g. "z / z_i" when "z" holds a normalised height).
+    references: {column: (x values, z values, legend label)}, drawn as a black dashed curve in that column's panel.
     """
     n_rows, n_cols = len(rows), max(len(r) for r in rows)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(2.8 * n_cols + 1.0, 5.0 * n_rows + 1.0),
@@ -94,15 +97,24 @@ def plot_profile_grid(profiles, rows, save_path, title="", zmax=None, colors=Non
         for ax, (col, _) in panels:
             if col in df:
                 ax.plot(df[col], df["z"], style, color=color, linewidth=1.5, label=label)
+    for ax, (col, _) in panels:
+        if col in (references or {}):
+            x_ref, z_ref, ref_label = references[col]
+            ax.plot(x_ref, z_ref, "--", color="k", linewidth=1.5, label=ref_label)
     for ax, (_, xlabel) in panels:
         ax.set_xlabel(xlabel)
         ax.grid(True, linestyle=":", alpha=0.5)
         ax.axvline(0.0, color="0.6", linewidth=0.8)
     for r in range(n_rows):
-        axes[r][0].set_ylabel("z [m]")
+        axes[r][0].set_ylabel(ylabel)
     if zmax is not None:
         axes[0][0].set_ylim(0, zmax)
-    handles, labels = panels[0][0].get_legend_handles_labels()
+    handles, labels = [], []
+    for ax, _ in panels:     # every line once, reference curves included
+        for h, lab in zip(*ax.get_legend_handles_labels()):
+            if lab not in labels:
+                handles.append(h)
+                labels.append(lab)
     fig.legend(handles, labels, loc="upper center", ncol=min(len(labels), 6), frameon=False,
                bbox_to_anchor=(0.5, 1.0))
     if title:

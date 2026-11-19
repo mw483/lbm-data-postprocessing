@@ -137,3 +137,57 @@ def sources_in_box(xyz, bounds, max_points=200_000, seed=0):
     if len(xyz) > max_points:
         xyz = xyz[np.random.default_rng(seed).choice(len(xyz), max_points, replace=False)]
     return pv.PolyData(np.ascontiguousarray(xyz)) if len(xyz) else None
+
+
+def crop_and_coarsen_codes(codes, crop=None, stride=1):
+    """
+    A class-code raster (e.g. road_class.npy, 0 = none) cropped and trimmed exactly
+    like crop_and_coarsen. A coarse block takes the smallest non-zero code in it,
+    so the biggest road wins (1 motorway < 4 local; elevated 11-14 lose to ground roads),
+    the same rule as rasterize_roads.py's overlay figure.
+    """
+    ny, nx = codes.shape
+    i0, i1, j0, j1 = crop if crop else (0, nx, 0, ny)
+    i1 = i0 + (min(i1, nx) - i0) // stride * stride
+    j1 = j0 + (min(j1, ny) - j0) // stride * stride
+    a = np.asarray(codes[j0:j1, i0:i1], dtype=np.int32)
+    if stride > 1:
+        big = np.iinfo(np.int32).max
+        b = np.where(a == 0, big, a).reshape(a.shape[0] // stride, stride, a.shape[1] // stride, stride)
+        a = b.min(axis=(1, 3))
+        a[a == big] = 0
+    return a.astype(np.uint8)
+
+
+def flat_tiles(z, mask, dx, origin=(0.0, 0.0)):
+    """PolyData of one horizontal quad at height z[j, i] on each cell where mask is set; None if empty."""
+    jj, ii = np.nonzero(mask)
+    if jj.size == 0:
+        return None
+    x0 = origin[0] + ii * dx
+    y0 = origin[1] + jj * dx
+    zz = np.asarray(z, dtype=np.float32)[jj, ii]
+    pts = _quads((x0, y0, zz), (x0 + dx, y0, zz), (x0 + dx, y0 + dx, zz), (x0, y0 + dx, zz)).reshape(-1, 3)
+    n = jj.size
+    faces = np.column_stack([np.full(n, 4), np.arange(4 * n).reshape(n, 4)]).ravel()
+    return pv.PolyData(pts, faces)
+
+
+def road_layers(codes, topo, dx, origin=(0.0, 0.0), zscale=1.0, lift=0.2, groups=None):
+    """
+    Road tiles just above the ground, one PolyData per group: {name: mesh}, empty groups
+    left out. codes and topo are the cropped, coarsened arrays (same shape). groups =
+    {name: set of codes}; default = the four ground classes and 'elevated' (codes > 10).
+    Tiles sit at ground x zscale + lift; buildings are not cut, so a road under a
+    building in the data is hidden inside it.
+    """
+    if groups is None:
+        groups = {"motorway": {1}, "arterial": {2}, "collector": {3}, "local": {4},
+                  "elevated": {11, 12, 13, 14}}
+    z = np.asarray(topo, dtype=np.float32) * zscale + lift
+    out = {}
+    for name, cs in groups.items():
+        mesh = flat_tiles(z, np.isin(codes, list(cs)), dx, origin)
+        if mesh is not None:
+            out[name] = mesh
+    return out

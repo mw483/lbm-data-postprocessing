@@ -1,0 +1,54 @@
+statistic,value,unit,what it measures
+land area,68.1984,km2,"columns 1279-7938, all rows"
+ground_count,17049600,cells,"ground height above map zero, land cells"
+ground_mean,4.560614794481982,m,"ground height above map zero, land cells"
+ground_std,4.776289547094156,m,"ground height above map zero, land cells"
+ground_min,0.0,m,"ground height above map zero, land cells"
+ground_max,22.0,m,"ground height above map zero, land cells"
+ground_p5,0.0,m,"ground height above map zero, land cells"
+ground_p25,1.0,m,"ground height above map zero, land cells"
+ground_p50,3.0,m,"ground height above map zero, land cells"
+ground_p75,8.0,m,"ground height above map zero, land cells"
+ground_p90,13.0,m,"ground height above map zero, land cells"
+ground_p95,14.0,m,"ground height above map zero, land cells"
+ground_p99,17.0,m,"ground height above map zero, land cells"
+lambda_p,0.3458131569069069,-,share of land cells with a building
+h_b_count,5895976,cells,"building height above ground, building cells"
+h_b_mean,10.285981150533855,m,"building height above ground, building cells"
+h_b_std,18.71904856474235,m,"building height above ground, building cells"
+h_b_min,1.0,m,"building height above ground, building cells"
+h_b_max,383.0,m,"building height above ground, building cells"
+h_b_p5,6.0,m,"building height above ground, building cells"
+h_b_p25,6.0,m,"building height above ground, building cells"
+h_b_p50,6.0,m,"building height above ground, building cells"
+h_b_p75,6.0,m,"building height above ground, building cells"
+h_b_p90,12.0,m,"building height above ground, building cells"
+h_b_p95,27.0,m,"building height above ground, building cells"
+h_b_p99,100.0,m,"building height above ground, building cells"
+h_b_mode,6.0,m,most common building height (a default height for buildings without data?)
+h_b_mode_share,0.7282546604667319,share of building cells,building cells at the most common height
+H_av,3.557027578353882,m,building volume / land area
+lambda_f_i,0.306152637012012,-,"windward wall area / land area, wind along map x (i)"
+lambda_f_j,0.2943338846659159,-,"windward wall area / land area, wind along map y (j)"
+buildings_taller_than_50m,334,count,buildings (4-connected groups) by max height
+buildings_taller_than_100m,140,count,buildings (4-connected groups) by max height
+buildings_taller_than_150m,50,count,buildings (4-connected groups) by max height
+buildings_taller_than_200m,22,count,buildings (4-connected groups) by max height
+buildings_taller_than_300m,4,count,buildings (4-connected groups) by max height
+buildings,99066,count,4-connected groups of building cells (whole domain)
+footprint_m2_count,99066,buildings,building footprint area
+footprint_m2_mean,238.06254416247754,m2,building footprint area
+footprint_m2_std,1609.428027023106,m2,building footprint area
+footprint_m2_min,4.0,m2,building footprint area
+footprint_m2_max,111872.0,m2,building footprint area
+footprint_m2_p5,4.0,m2,building footprint area
+footprint_m2_p25,4.0,m2,building footprint area
+footprint_m2_p50,4.0,m2,building footprint area
+footprint_m2_p75,12.0,m2,building footprint area
+footprint_m2_p90,244.0,m2,building footprint area
+footprint_m2_p95,976.0,m2,building footprint area
+footprint_m2_p99,4776.0,m2,building footprint area
+buildings_narrower_than_16_cells,0.9394545050774231,share of buildings,smallest bounding-box side < 16 cells (professor's resolution rule)
+volume_in_buildings_narrower_than_16_cells,0.08693977950495514,share of building volume,"same, weighted by building volume"
+tree_cover,0.14384314001501503,-,share of land cells with a tree and no building
+tree_heights,12,m,distinct tree heights above ground

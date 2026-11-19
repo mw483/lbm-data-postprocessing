@@ -1,0 +1,11 @@
+set: flat2048_long
+runs:
+  convective_long:
+    output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
+    particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess
+    particle_reduced: Z:/lbm_reduced/flat_2048x128x704/20261030_scalar2/particle_reduced
+inputs:
+  convective_long: Z:\lbm_reduced\flat_2048x128x704\20261030_scalar2\particle_reduced
+script: plot_particle_bin_stats.py
+written: '2026-11-02T10:49:58'
+repo_commit: 7c1a231+dirty

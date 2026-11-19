@@ -4,7 +4,8 @@ What is in each solver output folder, and is anything missing.
 For every case: lists each variable (file stem such as xy_um, xz_yav_uu, prof), its output steps
 with times, and how many rank files each step has against ncpu in header.txt. For the newest
 step it reads every plane variable once and checks that all ranks stitched to the expected
-domain size. Prints a summary and writes inventory_<case>.csv.
+domain size. Prints a summary and writes inventory_<case>.csv to <figures>/<set>/inventory/.
+Cases = the runs of a run set (run_sets.yaml, --set NAME).
 
 Files with an extra plane suffix (xz_ins_*, yz_ins_*) are counted by the folder listing only.
 """
@@ -13,15 +14,11 @@ import pandas as pd
 
 from data_loaders.lbm_output import LAYOUTS, load_plane, read_header_txt, scan_run
 from data_loaders.local_paths import load_local_paths, wind_dir
+from data_loaders.run_sets import parse_set_args, set_output_dir, write_manifest
 
 # =============================================================================
 # Settings
 # =============================================================================
-CASES = {
-    # label: run as "<case>/<date>_<tag>"; its wind CSV are in <lbm_results>/<run>/output (local_paths.yaml)
-    "convective": "flat_512x128x1024/20261011_scalar2",
-    "neutral": "flat_512x128x1024/20261017_neutral",
-}
 SKIP_PREFIXES = ("xy_ag_",)    # terrain-following planes repeat the xy planes on flat ground
 CHECK_SHAPES = True            # read the newest step of every plane variable (slower)
 
@@ -70,11 +67,11 @@ def shape_check(run_dir, header, name, step):
 
 
 def main():
+    set_name, runs = parse_set_args(__doc__)
     paths = load_local_paths()
-    out_dir = paths["figures"] / "scalar2_outputs" / "inventory"
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = set_output_dir(paths, set_name, "inventory")
 
-    for label, folder in CASES.items():
+    for label, folder in runs.items():
         run_dir = wind_dir(paths, folder)
         header, table = summarise(run_dir)
         prof_steps = sorted(int(s) for s in scan_run(run_dir).query("name == 'prof'")["step"].unique())
@@ -89,6 +86,7 @@ def main():
         save = out_dir / f"inventory_{label}.csv"
         table.to_csv(save, index=False)
         print(f"[SUCCESS] Table saved to: {save}")
+    write_manifest(out_dir, set_name, runs, inputs={k: wind_dir(paths, r) for k, r in runs.items()})
 
 
 if __name__ == "__main__":

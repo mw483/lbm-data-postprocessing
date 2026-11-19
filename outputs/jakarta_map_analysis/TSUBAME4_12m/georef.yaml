@@ -1,0 +1,60 @@
+crs: EPSG:23834
+cell_size: 2.0
+orientation: i:S,j:W
+nx: 8000
+ny: 2560
+e_topleft: 234370.11625920495
+n_topleft: 826439.0878619272
+fit:
+  reference:
+  - E:/Jakarta/Bldg/east/w_height.shp
+  - E:/Jakarta/Bldg/east/wo_height.shp
+  ncc: 0.8594
+  map_in_ref: 0.8228
+  ref_in_map: 0.8976
+  iou: 0.7522
+  coarse_scores:
+    i:S,j:W: 0.9532
+    i:S,j:E: 0.4844
+    i:N,j:W: 0.482
+    i:N,j:E: 0.4815
+    i:E,j:S: 0.4935
+    i:E,j:N: 0.4973
+    i:W,j:S: 0.4738
+    i:W,j:N: 0.4786
+corners_lonlat:
+  i=0,j=0:
+  - 106.856771
+  - -6.09175
+  i=0,j=2559:
+  - 106.810532
+  - -6.091778
+  i=7999,j=0:
+  - 106.856868
+  - -6.236425
+  i=7999,j=2559:
+  - 106.810616
+  - -6.236455
+compare:
+  E:/Jakarta/Bldg/west/buildingJakarta.shp:
+    scores_whole_map:
+      ncc: 0.5884
+      map_in_ref: 0.5503
+      ref_in_map: 0.6291
+      iou: 0.4155
+    scores_inside_its_extent:
+      ncc: 0.6274
+      map_in_ref: 0.6258
+      ref_in_map: 0.6291
+      iou: 0.4571
+    extent_crs:
+    - 234179.2
+    - 810556.9
+    - 238958.7
+    - 823854.5
+    map_building_cells_outside_its_extent: 0.1207
+    offset_m_vs_map:
+      west: -190.9
+      east: -531.4
+      north: -2584.6
+      south: 117.8

@@ -1,5 +1,6 @@
 """
-Animation of all particles (a fixed subset) from the snapshots of reduce_particle_bins.py, cases side by side.
+Animation of all particles (a fixed subset) from the snapshots of reduce_particle_bins.py, the runs of a run set
+(run_sets.yaml, --set NAME) side by side.
 
 Python port of the old MATLAB particle_visual.m: the same three views, now for several cases at once.
   --mode xz   side view, every particle projected on x-z (or only a slab with --slab y0 y1)
@@ -7,13 +8,14 @@ Python port of the old MATLAB particle_visual.m: the same three views, now for s
   --mode 3d   PyVista point cloud, one row per case
 Particles are coloured by age [s] (or height with --color z); one colour scale for all frames and cases.
 
-Reads <lbm_results>/<run>/particle_reduced/snapshots/snap_<n>.npz and writes to
-<figures>/particle_animation/<mode>[_slab<lo>-<hi>]_<color>/ (e.g. xz_age): frame_<n>.png, animation.gif, animation.mp4 (needs the video extra).
+Reads <run>/particle_reduced/snapshots/snap_<n>.npz below lbm_reduced or lbm_results and writes to
+<figures>/<set>/particle_animation/<mode>[_slab<lo>-<hi>]_<color>/ (e.g. xz_age): frame_<n>.png, animation.gif, animation.mp4 (needs the video extra).
 
 Usage:
   python scripts/animate_particles.py --mode xz
   python scripts/animate_particles.py --mode xy --slab 0 10 --every 2
   python scripts/animate_particles.py --mode 3d --zmax 400
+  python scripts/animate_particles.py --mode xz --set flat512_sgsfix
 """
 import argparse
 
@@ -22,15 +24,12 @@ import numpy as np
 from matplotlib.colors import Normalize
 
 from data_loaders.local_paths import load_local_paths, particle_reduced_dir
+from data_loaders.run_sets import add_set_argument, get_run_set, set_output_dir, write_manifest
 from plotting_core.heatmap_plots import frames_to_gif, frames_to_mp4
 
 # =============================================================================
 # Settings
 # =============================================================================
-CASES = {
-    "convective": "flat_512x128x1024/20261011_scalar2",
-    "neutral": "flat_512x128x1024/20261017_neutral",
-}
 DOMAIN = (1024.0, 256.0)    # x, y extent [m]
 FPS = 10                    # animation frames per second
 POINT_SIZE = 0.4            # matplotlib marker size (points^2)
@@ -47,6 +46,7 @@ def parse_args():
     p.add_argument("--zmax", type=float, default=300.0, help="top of the xz and 3d views [m]")
     p.add_argument("--every", type=int, default=1, help="use every n-th snapshot")
     p.add_argument("--vmax", type=float, help="top of the colour scale (default: max over all frames)")
+    add_set_argument(p)
     return p.parse_args()
 
 
@@ -117,26 +117,26 @@ def draw_3d(snaps, color, norm, zmax, title, save_path):
 
 def main():
     a = parse_args()
+    set_name, runs = get_run_set(a.run_set)
     paths = load_local_paths()
-    folders = {c: particle_reduced_dir(paths, r) / "snapshots" for c, r in CASES.items()}
+    folders = {c: particle_reduced_dir(paths, r) / "snapshots" for c, r in runs.items()}
     files = {c: snapshot_files(f) for c, f in folders.items()}
     outputs = sorted(set.intersection(*(set(f) for f in files.values())))[:: a.every]
     if not outputs:
         raise FileNotFoundError(f"[ERROR] the cases share no snapshot; folders {list(folders.values())}")
     slab = tuple(a.slab) if a.slab else None
     tag = a.mode + (f"_slab{a.slab[0]:g}-{a.slab[1]:g}" if slab else "") + f"_{a.color}"
-    out_dir = paths["figures"] / "particle_animation" / tag
-    out_dir.mkdir(parents=True, exist_ok=True)
+    out_dir = set_output_dir(paths, set_name, "particle_animation", tag)
 
     vmax = a.vmax
     if vmax is None:   # colour scale from the last snapshot, where ages and heights are largest
-        last = {c: load_snapshot(files[c][outputs[-1]], a.mode, slab) for c in CASES}
+        last = {c: load_snapshot(files[c][outputs[-1]], a.mode, slab) for c in runs}
         vmax = max(float(d[a.color].max()) for d in last.values() if d[a.color].size)
     norm = Normalize(vmin=0.0, vmax=vmax)
 
     frames = []
     for n in outputs:
-        snaps = {c: load_snapshot(files[c][n], a.mode, slab) for c in CASES}
+        snaps = {c: load_snapshot(files[c][n], a.mode, slab) for c in runs}
         t = next(iter(snaps.values()))["time"]
         title = f"output {n}, t = {t:.1f} s"
         if slab:
@@ -150,6 +150,7 @@ def main():
     frames_to_gif(frames, out_dir / "animation.gif", fps=FPS)
     if frames_to_mp4(frames, out_dir / "animation.mp4", fps=FPS):
         print(f"[SUCCESS] MP4 saved to: {out_dir / 'animation.mp4'}")
+    write_manifest(out_dir, set_name, runs, inputs=folders)
     print(f"[SUCCESS] {len(frames)} frames and GIF saved to: {out_dir}")
 
 

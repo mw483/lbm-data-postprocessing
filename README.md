@@ -27,19 +27,31 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 | `data_loaders/` | Readers for LBM wind CSVs, C++ particle-postprocessing outputs, raw particle `.bin` files and maps |
 | `physics_core/` | Calculations: turbulence statistics, footprints (Kljun FFP, Schmid), particle transit times |
 | `plotting_core/` | Plotting functions (matplotlib, PyVista) |
-| `scripts/` | One script per figure or analysis. Edit the settings at the top of `main()` and run it. |
+| `scripts/` | One script per figure or analysis. Edit the settings at the top of `main()` and run it. Scripts for the LBM-city scalar2 runs (2026-10-16 on) sit directly in `scripts/` |
+| `scripts/repo1_runs/` | Scripts for the older repo 1 runs (June to early October 2026), by topic: `sensor_3d/`, `sensor_transit_time/`, `basic_statistics/`, `source_area/`. See [scripts/repo1_runs/README.md](scripts/repo1_runs/README.md) |
 | `tools/` | Small helpers, e.g. inspecting a particle `.bin` file |
 | `tests/` | `pytest` checks for the loaders and calculations |
 | `archive/` | Retired scripts and functions, kept for reference and no longer maintained |
 
 ## Running
 
+### Run sets: which runs a comparison script reads (2026-10-26)
+
+The comparison scripts below (`inventory_lbm_output`, `plot_profiles_by_window`, `plot_velocity_stress_profiles`, `plot_xz_yav_heatmaps`, `compare_window_scatter`, `analyze_particle_density`, `plot_particle_bin_stats`, `animate_particles`) read the runs of a named set in `run_sets.yaml` (repo root, tracked). A set holds any number of runs as `label: <case>/<date>_<tag>`; the label is the name in legends and in the `case` column of the CSV files. A run whose data is not in the `<lbm_results>/<case>/<date>_<tag>/...` layout (for example on an rclone drive) can instead be given as its folders: `label: {output: Z:/..., particle_postprocess: Z:/..., particle_reduced: Z:/...}` (only the ones the scripts need).
+
+```sh
+python -m scripts.plot_particle_bin_stats                       # set named "default" in run_sets.yaml
+python -m scripts.plot_particle_bin_stats --set flat512_sgsfix  # another set
+```
+
+Output goes to `<figures>/<set>/<topic>/` (e.g. `figures/flat512_sgsfix/particle_bins/sgs_along_x.png`), so different sets never overwrite each other. Each output folder gets a `runs.yaml` with the set, its runs, the data folders read, the script, the date and the repo commit. To compare other runs, add a new set to `run_sets.yaml` rather than editing a set that already has figures. Reducer outputs are looked up in `<lbm_reduced>/<run>/particle_reduced` first (optional key in `local_paths.yaml`), then in `<lbm_results>/<run>/particle_reduced`.
+
 ### Presentation demo (2026-10-07)
 
 ```sh
 pip install -e .[video]                                  # once, for the MP4 backup
-python scripts/demo_presentation.py --record             # once before the talk: builds the cache, writes MP4/PNG backups
-python scripts/demo_presentation.py                      # live: isopleths -> velocity lines -> TTD
+python scripts/repo1_runs/sensor_3d/demo_presentation.py --record             # once before the talk: builds the cache, writes MP4/PNG backups
+python scripts/repo1_runs/sensor_3d/demo_presentation.py  # live: isopleths -> velocity lines -> TTD
 ```
 
 Flat and cube array side by side, one shared camera. Close a window to go to the next stage. Settings are at the top of the script.
@@ -51,9 +63,23 @@ python scripts/view_map_3d.py --case flat_512x128x1024                          
 python scripts/view_map_3d.py --case flat_512x128x1024 --sources                 # + the case's particle_position.txt
 python scripts/view_map_3d.py <map folder> --crop 4300 4900 1000 1500 --stride 1 # any map folder; cells i0 i1 j0 j1, full 2 m
 python scripts/view_map_3d.py <map folder> --sources <particle_position.txt>     # overlay a source file
+python scripts/view_map_3d.py <map folder> --box J1 --save                     # map.yaml next to the .dat files adds roads,
+                                                                                 #   candidates and georef; PNG + location .yaml
 ```
 
 `--case` reads `<lbm_cases>/<case>/map/` (set `lbm_cases` in `local_paths.yaml` to an LBM-city `cases` folder, branch `mikael/cases`). A map folder is any folder with `topography.dat`, `building.dat` and `vegetation.dat`, for maps that are not a case yet. Press `p` over a point to print x, y, cell i, j and the heights there; `s` saves a screenshot to `<figures>/map_3d/`. Coarsened views widen buildings and trees, so pick sources on a `--stride 1` crop. `--save view.png` writes a PNG without a window.
+
+### Jakarta map analysis (2026-10-28)
+
+Consistency checks, location fit, terrain/building/tree statistics and figures for a map set: see [scripts/jakarta-map-analysis/README.md](scripts/jakarta-map-analysis/README.md).
+
+### Urban parameters of several maps (2026-11-12)
+
+```sh
+python scripts/compare_urban_parameters.py scripts/compare_urban_parameters_example.yaml   # -> urban_parameters.csv / .png
+```
+
+Compares idealised cube arrays (aligned or staggered, generated from their parameters), boxes of any map set (e.g. Jakarta candidates) and whole LBM-city cases: λp, λf, heights and their spread, building widths vs the 10/16-cell rules, street width and H/W, d and z0 (Macdonald et al. 1998; Kanda et al. 2013), and with `nz` the AIJ domain checks. The example config lists every option.
 
 ### Solver statistics, scalar2 and later (2026-10-16)
 
@@ -62,11 +88,20 @@ Set `lbm_results` in `local_paths.yaml` (lab PC: `D:/lbm_results`). Runs sit at 
 ```sh
 python scripts/inventory_lbm_output.py      # which files, steps and ranks exist; stitch check of every plane
 python scripts/plot_profiles_by_window.py   # mean, sigma_w, TKE, S_w, theta, w'theta' per 200 s window; cases compared
+python scripts/compare_window_scatter.py --set flat512_sgsfix   # run-to-run spread vs window-to-window change (is a gap more than window noise?)
 python scripts/plot_velocity_stress_profiles.py   # U, V, W and <u'u'>, <v'v'>, <w'w'>, <u'w'> per window, as is and / Ub (Chang et al. 2009 style)
 python scripts/plot_xz_yav_heatmaps.py      # y-averaged x-z heatmaps of U, W, sigma_w, TKE per window; PNG frames, GIF, MP4
+python scripts/plot_profiles_by_station.py --set flat2048_long        # profiles at the yz-plane x stations (+-64 m) and their spread per window
+python scripts/plot_cbl_scales.py --set flat2048_long                 # z_i, w*, t* per window (domain and per rank segment) vs the jump model
+python scripts/plot_cbl_normalised_profiles.py --set flat2048_long    # <w'w'>/w*^2, heat flux etc. against z/z_i, with standard CBL curves
+python scripts/plot_dispersion_validation.py --set flat2048_long      # particles vs Willis & Deardorff / Stull ch. 19 and Prairie Grass (needs particle_reduced)
 ```
 
-The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side) and `<case>_step*.png` (one case each), plus `combined.gif` / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
+`plot_dispersion_validation.py` needs a `reduced.npz` made by `reduce_particle_bins.py` from 2026-11-01 on (it adds the per-source "plume" histogram), the Prairie Grass files in `validation_data/prairie_grass/` and `pip install -e .[validation]` (xlrd, for the z_i .xls file). It also draws `survival_<run>.png` (share of particles still in the domain, plume front, share above z_i, with the first exit through the outflow marked) and `near_wall_<run>.png` (lowest 40 m, 2 m bins). The survivor-normalised concentration (dashed curve on the ground-level figure) needs a `reduced.npz` from the reducer's survivor pass (default from 2026-11-01, second version; it first reads the index files once more, `--no-survivor-pass` skips it); older files still give every other figure.
+
+The last three come from the plan in `planning/cbl_scales_and_particle_validation_plan_2026-10-30.md` (project files). Each script's docstring states what the figure measures, why, the reference it is compared with ([U] = formula not yet checked in the source) and the normalisation. The settings at the top of `plot_cbl_scales.py` (initial neutral layer 300 m, lapse rate 0.01 K/m, flux 0.1 K m/s) copy LBM-city `src/Define_user.h` and must be changed for runs with another initial state.
+
+The heatmaps use one colour scale per variable, shared by both cases and every window, and plot 0 to 1000 m. Each variable gets `combined_step*.png` (cases side by side, only for sets with more than one run) and `<case>_step*.png` (one case each), plus `combined.gif` (same condition) / `<case>.gif` at 1 frame per second. MP4 files need the video extra (`pip install -e .[video]`) and are skipped without it.
 
 `data_loaders/lbm_output.py` reads every plane layout (xy, xy_ag, xz, yz, xz_yav), stitches the ranks and reads `prof*.csv` and `header.txt`. The files hold raw moments (`uu` = <u u>); `physics_core/moments.py` turns them into variances, covariances, TKE and skewness.
 
@@ -78,7 +113,7 @@ Run `run_basic.sh` (LBM-city `cases/<case>/`) once per window; each window lands
 python scripts/analyze_particle_density.py   # N(t), C(z), y-mean C(x) with block error bands, xz slab; CSV tables
 ```
 
-The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/particle_density/`.
+The C++ density files are counts summed over all snapshots of a window. `data_loaders/particle_postprocess.py` reads them (plus `total_num.csv`, `profile.csv` and the settings and snapshot count in `log_analysis.txt`); `physics_core/particle_density.py` turns them into concentrations C = count / (snapshots x cell volume) [particles/m^3] and computes height statistics, spanwise and block spread, and residence time N / release rate. Output goes to `<figures>/<set>/particle_density/` (see Run sets).
 
 ### Raw particle binaries: Lagrangian statistics and animations (2026-10-20)
 
@@ -90,7 +125,7 @@ python3 scripts/reduce_particle_bins.py --bin-dir <particle folder> \
     --out <somewhere>/particle_reduced
 ```
 
-It streams outputs 1200-1800 once and writes `reduced.npz` (age, height and x statistics) and `snapshots/snap_<n>.npz` (every 5th output, a fixed 1/8 of the particles with age). Copy the `particle_reduced` folder to `<lbm_results>/<case>/<date>_<tag>/particle_reduced` on the PC (rclone), then:
+It streams outputs 1200-1800 once and writes `reduced.npz` (age, height and x statistics) and `snapshots/snap_<n>.npz` (every 5th output, a fixed 1/8 of the particles with age). Copy the `particle_reduced` folder to `<lbm_results>/<case>/<date>_<tag>/particle_reduced` on the PC (rclone), or set `lbm_reduced` in `local_paths.yaml` to a root laid out as `<lbm_reduced>/<case>/<date>_<tag>/particle_reduced` (e.g. the TSUBAME mount `Z:/lbm_reduced`), then (add `--set NAME` for another run set):
 
 ```sh
 python scripts/plot_particle_bin_stats.py           # height and sigma_z vs age, PDF(z | age), CBL scaling, particle vs Eulerian sigma_w, SGS along x
@@ -102,6 +137,6 @@ python scripts/animate_particles.py --mode 3d       # PyVista point cloud (off-s
 Ages come from the particle ID (release number). Age statistics use only sources with x <= 104 m, so particles do not leave through the outflow (x = 1024 m) within the plotted ages. `sgs_along_x.png` shows the SGS velocity of near-ground particles along x, with the GPU rank boundaries marked.
 
 ```sh
-python scripts/analyze_particle_statistics.py
+python scripts/repo1_runs/basic_statistics/analyze_particle_statistics.py   # repo 1 runs
 pytest                      # run the checks
 ```

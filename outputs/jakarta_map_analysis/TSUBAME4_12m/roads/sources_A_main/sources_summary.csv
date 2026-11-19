@@ -1,0 +1,4 @@
+class,points,outside_map_or_land,outside_box,in_building,in_tree,sources,dropped_in_building_share,dropped_in_tree_share,vs_id_limit
+motorway,2169,710,1459,0,0,0,,,0.0
+arterial,17268,1956,15312,0,0,0,,,0.0
+all,19437,2666,16771,0,0,0,,,0.0

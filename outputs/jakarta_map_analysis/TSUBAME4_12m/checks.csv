@@ -1,0 +1,19 @@
+check,value,unit,status,note
+grid,8000 x 2560,cells,ok,16.00 x 5.12 km at 2 m
+building < topography,0,cells,ok,building.dat must be absolute (ground + building)
+vegetation < topography,0,cells,ok,vegetation.dat must be absolute
+non-integer values,"topo 0.00%, build 0.00%, veg 0.00%",share,ok,
+odd building heights,12.5%,of building cells,note,with 2 m cells an odd height ends mid-layer and is rounded by the solver
+tree heights above ground,12,m,ok,
+trees on building cells,44935,cells,note,the building wins in the solver (both solid)
+land columns,1279 - 7938,column index,ok,columns 0-1278 and 7939-7999 are flat 0 m with no building
+trees outside the land columns,10894,cells,note,columns 1009-1210 (e.g. the sea fetch)
+buildings (4-connected groups),99066,count,ok,
+one-cell buildings,52581,count,note,"53.1% of buildings; under one cell wide, poorly resolved"
+one-cell gaps along i,18599,cells,note,
+one-cell gaps along j,18908,cells,note,
+building cells on row j = 0,3428,cells,note,cut at the seam if that boundary is periodic
+building cells on row j = 2559,2360,cells,note,cut at the seam if that boundary is periodic
+building cells on column i = 0,0,cells,ok,cut at the seam if that boundary is periodic
+building cells on column i = 7999,0,cells,ok,cut at the seam if that boundary is periodic
+ground step across the y seam,"mean 3.16, max 16",m,note,|topography(j=0) - topography(j=ny-1)| over the land columns

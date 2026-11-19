@@ -1,0 +1,16 @@
+# Scripts for the repo 1 runs (June to early October 2026)
+
+These scripts were written for the older runs from `mw483/lbm-cuda-project` (repo 1): `20260527_*_flat_3072`, `20260612_*_cube_3072`, `20260630_*_flat_16mapproach`, `20260707_*_shortroughness` and `20260803_*_cube_16mapproach`. Their data is on the `Z:` and `Y:` drives, or found through `sensor_output_dir` in `local_paths.yaml`. The scripts for the LBM-city scalar2 runs (2026-10-16 on) are in `scripts/` itself.
+
+The scripts were moved here on 2026-11-02 and kept as they were. The only change is that output and parameter paths that used to start with `../` (relative to the folder you ran them from) now start from the repository root (`REPO_ROOT` in `data_loaders/local_paths.py`). So they write to the same `figures/` and `physics_core/metrics/` folders as before, wherever you run them from. Run them with `python scripts/repo1_runs/<folder>/<script>.py` after `pip install -e .`.
+
+| Folder | What | Scripts |
+|---|---|---|
+| `sensor_3d/` | 3D views of the particles that reached a sensor (C++ sensor outputs `sensor_hit_ids.txt`, `target_trajectories.csv`), plus two whole-domain density views | `plot_particle_trajectory`, `plot_sensor_density_cloud`, `plot_sensor_density_isosurfaces`, `plot_velocity_particles`, `animate_particles_to_sensor`, `plot_particle_velocity_profiles`, `demo_presentation` (2026-10-07 talk), `plot_density_dvr` and `plot_density_isosurfaces` (whole-domain C++ `_density` output, no sensor) |
+| `sensor_transit_time/` | Transit-time distributions of the sensor hits (`particle_io.load_hit_table`, `physics_core.particle_analysis`) | `plot_transit_times`, `plot_ensemble_ttd`, `table_transit_time_stats` |
+| `basic_statistics/` | Flow statistics (virtual tower on `xz_yav`) and particle velocity/plume statistics from the raw `.bin` files | `analyze_inflow_statistics`, `plot_lateral_variance_scatter`, `analyze_particle_statistics`, `calculate_plume_dispersion` |
+| `source_area/` | LBM footprints, Kljun/Schmid comparisons, and the wind statistics that feed the models (`physics_core/metrics/*_params.json`) | footprints: `plot_lbm_footprint`, `plot_lbm_contours`, `plot_spanwise_footprints`, `plot_absolute_line_footprint`, `compare_lbm_cases`, `plot_vertical_detection`, `plot_blending_height` (dead end, kept), `visualize_domain`. Models: `compare_kljun_lbm`, `compare_schmid_lbm`, `plot_footprint_metrics`. Model inputs: `extract_variance`, `extract_sourcearea_wind_stats`, `plot_meteorological_profiles`, `analyze_effective_velocity` |
+
+Known state: the footprint code is on hold and was not fixed. For example, `schmid_params.json` no longer exists in `physics_core/metrics/` (see the 2026-10-01 review), so the scripts that read it stop there.
+
+Library modules these scripts use and the scalar2 scripts do not: `data_loaders` `footprint_io`, `lbm_parsers`, `config_loader`, `particle_io`, `sensor_cache`; `physics_core` `calc_footprint_FFP*`, `footprint_processing`, `kljun_wrapper`, `schmid_model`, `particle_analysis`, `turbulence`; `plotting_core` `comparative_plots`, `density_plots`, `footprint_plots`, `footprint_metrics_plots`, `particle_3d_plots`, `sensitivity_plots`, `velocity_analysis_plots`, `map_plots`. Both sets share `particle_bin`, `map_io`, `pyvista_helpers`, `local_paths` and `profile_plots`, so the library packages stay where they are.

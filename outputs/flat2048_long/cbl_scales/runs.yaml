@@ -1,0 +1,10 @@
+set: flat2048_long
+runs:
+  convective_long:
+    output: Z:/LBM-city/20261030_output_flat_2048x128x704_scalar2
+    particle_postprocess: Z:/LBM-city/20261030_particle_flat_2048x128x704_scalar2/postprocess
+inputs:
+  convective_long: Z:\LBM-city\20261030_output_flat_2048x128x704_scalar2
+script: plot_cbl_scales.py
+written: '2026-11-01T12:21:39'
+repo_commit: 986318f
