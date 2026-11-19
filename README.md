@@ -29,7 +29,7 @@ Edit `local_paths.yaml` (git-ignored, one per machine): the particle post-proces
 | `plotting_core/` | Plotting functions (matplotlib, PyVista) |
 | `scripts/` | One script per figure or analysis. Edit the settings at the top of `main()` and run it. Scripts for the LBM-city scalar2 runs (2026-10-16 on) sit directly in `scripts/` |
 | `scripts/repo1_runs/` | Scripts for the older repo 1 runs (June to early October 2026), by topic: `sensor_3d/`, `sensor_transit_time/`, `basic_statistics/`, `source_area/`. See [scripts/repo1_runs/README.md](scripts/repo1_runs/README.md) |
-| `tools/` | Small helpers, e.g. inspecting a particle `.bin` file |
+| `tools/` | Small helpers: `inspect_bin.py` (inspect a particle `.bin` file), `lbm_to_vtk/` (LBM output to VTK for vis_e2e and ParaView, see its README) |
 | `tests/` | `pytest` checks for the loaders and calculations |
 | `archive/` | Retired scripts and functions, kept for reference and no longer maintained |
 

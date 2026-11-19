@@ -31,6 +31,7 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | 2026-11-12 | [2026-11-12_road-sources.md](2026-11-12_road-sources.md) | Branch `analysis/scalar2-outputs`: OSM roads (as of 2024-01-01) for the Jakarta map: `road_network` library, `fetch_osm_roads.py`, `rasterize_roads.py`, `place_road_sources.py` (sources every 16 m along centrelines, all classes and main roads, elevated roads left out). Synthetic tests only, not run on the real map | `7169840` `cd30156` |
 | 2026-11-16 | [2026-11-16_map-viewer-roads.md](2026-11-16_map-viewer-roads.md) | Branch `analysis/scalar2-outputs`: `view_map_3d.py` shows the Jakarta roads by class, names saved images after the map and box and writes the cut-out coordinates (image text and `<png>.yaml`); optional `map.yaml` next to the `.dat` files (first piece of the map library). Synthetic map only, not run on the real map or interactively | `c3482a6` `1d42e78` |
 | 2026-11-17 | [2026-11-17_plume-height-references.md](2026-11-17_plume-height-references.md) | Branch `analysis/scalar2-outputs`: dispersion figures compare like with like: model height of the concentration maximum against Stull eq. 19.32 (left), model mean height and sigma_z against digitised Willis & Deardorff 1976 Fig. 2 (right); `peak_height_of_density`, W&D reader and data file. Unit tests and synthetic layout only, not run on real data | `6cb5226` |
+| 2026-11-19 | [2026-11-19_lbm-to-vtk-converters.md](2026-11-19_lbm-to-vtk-converters.md) | Branch `feature/lbm-to-vtk`: `tools/lbm_to_vtk` package (`python -m tools.lbm_to_vtk particles / slices / map`) converts particle `.bin`, legacy CSV planes and map sets to `.vtp` / `.vti` / `.pvd` for Prometech's vis_e2e on mdx; one writer module, readers are the existing `data_loaders`. Synthetic tests only (8), not run on real data or opened in vis_e2e | `3404736` `8226c87` |
 
 ## Glossary
 
@@ -93,6 +94,10 @@ Notes on what changed in this repo and why. Each file covers one piece of work. 
 | Height of maximum | Height / z_i where the concentration of a row is largest (after a 3-bin running mean); what Stull eq. 19.32 gives. Not the mean height |
 | Mean particle height | Concentration-weighted mean z / z_i; what W&D 1976 Fig. 2 shows |
 | l/z_i | Horizontal distance between the tank sidewalls over z_i in W&D 1976 (cases 1.9 and 4.0) |
+| `.pvd` | ParaView collection file: a list of VTK files with a time each, so a viewer shows them as a time series. Paths inside are relative |
+| vis_e2e | Prometech's browser-based viewer on the mdx cloud; opens only VTK formats (`.vtu .vti .vtp .vtm .pvd .vtkhdf`) |
+| mdx | The cloud platform where vis_e2e runs |
+| VTK files | `.vtp` = points or surfaces (particles, map), `.vti` = regular image (a slice plane) |
 
 ## Inspecting the changes
 
